@@ -5,7 +5,7 @@ import os
 import time
 import traceback
 
-from mwlib.async.rpcclient import serverproxy
+from qs.rpcclient import serverproxy
 
 def shorterrmsg():
     etype, val, tb = sys.exc_info()

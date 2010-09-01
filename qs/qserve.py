@@ -4,7 +4,7 @@ import cPickle
 import getopt # yes, getopt!
 import sys
 
-from mwlib.async import jobs
+from qs import jobs
     
 class db(object):
     def __init__(self):
@@ -78,7 +78,7 @@ def usage():
     print "mw-qserve [-p PORT] [-i INTERFACE] [-d DATADIR]"
 
 def main():
-    from mwlib.async.rpcserver import request_handler, server
+    from qs.rpcserver import request_handler, server
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "a:d:p:i:h", ["help", "port=", "interface="])
