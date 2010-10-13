@@ -1,0 +1,8 @@
+include qs/__init__.py
+include qs/jobs.py
+include qs/proc.py
+include qs/qserve.py
+include qs/rpcclient.py
+include qs/rpcserver.py
+include qs/slave.py
+include setup.py
