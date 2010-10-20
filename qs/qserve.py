@@ -1,35 +1,37 @@
 #! /usr/bin/env python
 import os
 import cPickle
-import getopt # yes, getopt!
+import getopt  # yes, getopt!
 import sys
 
 from qs import jobs
-    
+
+
 class db(object):
     def __init__(self):
         self.key2data = {}
         self.workq = jobs.workq()
-        
+
+
 class qplugin(object):
-    def __init__(self,  **kw):
+    def __init__(self, **kw):
         self.running_jobs = {}
-        
+
     def rpc_qadd(self, channel, payload=None, priority=0, jobid=None, wait=False, timeout=None, ttl=None):
         jobid = self.workq.push(payload=payload, priority=priority, channel=channel, jobid=jobid, timeout=timeout, ttl=ttl)
         if not wait:
             return jobid
-        
+
         res = self.workq.waitjobs([jobid])[0]
         return res._json()
-    
+
     def rpc_qpull(self, channels=None):
         if not channels:
             channels = []
-            
+
         j = self.workq.pop(channels)
         self.running_jobs[j.jobid] = j
-        
+
         return j._json()
 
     def rpc_qfinish(self, jobid, result=None, error=None, traceback=None):
@@ -40,7 +42,7 @@ class qplugin(object):
         self.workq.finishjob(jobid, result=result, error=error)
         if jobid in self.running_jobs:
             del self.running_jobs[jobid]
-        
+
     def rpc_qsetinfo(self, jobid, info):
         self.workq.updatejob(jobid, info)
 
@@ -55,7 +57,7 @@ class qplugin(object):
 
     def rpc_qkill(self, jobids):
         self.workq.killjobs(jobids)
-        
+
         for jobid in jobids:
             if jobid in self.running_jobs:
                 del self.running_jobs[jobid]
@@ -65,17 +67,19 @@ class qplugin(object):
 
     def rpc_qprefixmatch(self, prefix):
         return list(self.workq.prefixmatch(prefix))
-    
+
     def rpc_getstats(self):
         return self.workq.getstats()
-    
+
     def shutdown(self):
         for j in self.running_jobs.values():
             # print "reschedule", j
             self.workq.pushjob(j)
-        
+
+
 def usage():
     print "mw-qserve [-p PORT] [-i INTERFACE] [-d DATADIR]"
+
 
 def main():
     from qs.rpcserver import request_handler, server
@@ -91,18 +95,17 @@ def main():
     datadir = None
 
     allowed_ips = set()
-    
-    
+
     for o, a in opts:
         if o in ("-p", "--port"):
             try:
                 port = int(a)
-                if port<=0 or port>65535:
+                if port <= 0 or port > 65535:
                     raise ValueError("bad port")
             except ValueError:
                 print "expected positive integer as argument to %s" % o
                 sys.exit(10)
-        elif o in ("-i",  "--interface"):
+        elif o in ("-i", "--interface"):
             interface = a
         elif o in ("-d"):
             datadir = a
@@ -118,7 +121,7 @@ def main():
         qpath = os.path.join(datadir, "workq.pickle")
     else:
         qpath = None
-        
+
     if qpath and os.path.exists(qpath):
         print "loading", qpath
         d = cPickle.load(open(qpath))
@@ -130,26 +133,26 @@ def main():
         while 1:
             d.workq.handletimeouts()
             gevent.sleep(1)
-            
+
     def watchdog():
         while 1:
             d.workq.dropdead()
             gevent.sleep(15)
-            
+
     def report():
         while 1:
             d.workq.report()
             gevent.sleep(20)
-        
+
     import gevent
     gevent.spawn(report)
     gevent.spawn(watchdog)
     gevent.spawn(handletimeouts)
-    
+
     class handler(request_handler, qplugin):
         def __init__(self, **kwargs):
             super(handler, self).__init__(**kwargs)
-            
+
         workq = d.workq
         db = d
 
@@ -158,8 +161,8 @@ def main():
             return ip in allowed_ips
     else:
         is_allowed = lambda x: True
-    
-    s=server(port, host=interface, get_request_handler=handler, is_allowed=is_allowed)
+
+    s = server(port, host=interface, get_request_handler=handler, is_allowed=is_allowed)
     print "listening on %s:%s" % (interface, port)
     try:
         s.run_forever()
@@ -169,7 +172,7 @@ def main():
         if qpath:
             print "saving", qpath
             cPickle.dump(d, open(qpath, "w"), 2)
-        
-    
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     main()

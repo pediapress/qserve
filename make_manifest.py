@@ -2,6 +2,7 @@
 
 import os
 
+
 def main():
     files = [x.strip() for x in os.popen("git ls-files")]
 
@@ -10,11 +11,11 @@ def main():
             files.remove(n)
         except ValueError:
             pass
-    
+
     remove("make_manifest.py")
     remove("Makefile")
     remove(".gitignore")
-    
+
     files.sort()
 
     f = open("MANIFEST.in", "w")
@@ -22,5 +23,5 @@ def main():
         f.write("include %s\n" % x)
     f.close()
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()

@@ -5,22 +5,24 @@ from gevent import socket, core, event, Timeout
 
 pid2status = {}
 
+
 def got_signal(ev, signum):
     while 1:
         try:
             pid, st = os.waitpid(-1, os.WNOHANG)
-            if pid==0:
+            if pid == 0:
                 return
             pid2status[pid].set(st)
         except OSError:
             return
 
-core.event(core.EV_SIGNAL|core.EV_PERSIST, signal.SIGCHLD, got_signal).add()
+core.event(core.EV_SIGNAL | core.EV_PERSIST, signal.SIGCHLD, got_signal).add()
+
 
 def run_cmd(args, timeout=None):
     sp = socket.socketpair()
     pid = os.fork()
-    if pid==0:
+    if pid == 0:
         # client
         try:
             os.dup2(sp[1].fileno(), 1)

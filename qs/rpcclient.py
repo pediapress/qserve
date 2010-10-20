@@ -2,8 +2,9 @@ try:
     import simplejson as json
 except ImportError:
     import json
-    
+
 import socket
+
 
 class rpcclient(object):
     def __init__(self, host=None, port=None):
@@ -11,11 +12,11 @@ class rpcclient(object):
             host = "localhost"
         if port is None:
             port = 14311
-            
+
         self.host = host
         self.port = port
         self.socket = None
-        
+
     def _getsocket(self):
         s = self.socket = socket.create_connection((self.host, self.port))
         self.reader = s.makefile("r")
@@ -23,7 +24,7 @@ class rpcclient(object):
 
     def send(self, name, **kwargs):
         assert isinstance(name, str)
-        
+
         if self.socket is None:
             self._getsocket()
 
@@ -41,14 +42,15 @@ class rpcclient(object):
             self._getsocket()
             data = _send()
 
-        
         err = data.get("error")
         if err:
             raise RuntimeError(err)
         return data["result"]
-    
+
+
 class serverproxy(object):
     _make_client = rpcclient
+
     def __init__(self, host=None, port=None, rpcclient=None):
         if rpcclient is None:
             rpcclient = self._make_client(host=host, port=port)

@@ -6,38 +6,40 @@ try:
     import simplejson as json
 except ImportError:
     import json
-    
+
 from gevent import socket
-    
+
+
 def key2str(kwargs):
     r = {}
     for k, v in kwargs.items():
         r[str(k)] = v
     return r
 
+
 class dispatcher(object):
     def __call__(self, req):
         name, kwargs = req
         kwargs = key2str(kwargs)
-        
+
         assert isinstance(name, basestring), "bad name argument"
-        cmdname = str("rpc_"+name)
+        cmdname = str("rpc_" + name)
         m = getattr(self, cmdname, None)
         if not m:
             raise RuntimeError("no such method: %r" % (name, ))
         return m(**kwargs)
-    
+
+
 class request_handler(dispatcher):
     def __init__(self, client=None, clientid=None, **kw):
         self.client = client
         self.clientid = clientid
         super(request_handler, self).__init__(**kw)
-        
-        
+
     def shutdown(self):
         super(request_handler, self).shutdown()
-        
-    
+
+
 class server(object):
     def __init__(self, port=8080, host="", get_request_handler=None, secret=None, is_allowed=None):
         self.port = port
@@ -46,12 +48,12 @@ class server(object):
         self.get_request_handler = get_request_handler
         self.sock = socket.tcp_listener((self.host, self.port))
         self.clientcount = 0
-        
+
         if is_allowed is None:
             self.is_allowed = lambda x: True
         else:
             self.is_allowed = is_allowed
-        
+
     def run_forever(self):
         from gevent.server import StreamServer
         StreamServer(self.sock, self.handle_client).serve_forever()
@@ -74,30 +76,29 @@ class server(object):
 
     def log(self, msg):
         print msg
-                    
+
     def handle_client(self, sock, addr):
         client = (sock, addr)
         if not self.is_allowed(client[1]):
             self.log("+DENY %r" % (client[1], ))
             client[0].close()
             return
-        
+
         try:
-            self.clientcount+=1
+            self.clientcount += 1
             clientid = "<%s %s:%s>" % (self.clientcount, client[1][0], client[1][1])
-            
+
             sockfile = client[0].makefile()
             handle_request = self.get_request_handler(client=client, clientid=clientid)
-            
-            
+
             # self.log("+connect: %s" % (clientid, ))
-                     
+
             while 1:
                 line = sockfile.readline()
                 # print "got:",  repr(line)
                 if not line:
                     break
-                
+
                 try:
                     req = json.loads(line)
                 except ValueError, err:
@@ -105,12 +106,12 @@ class server(object):
                     break
 
                 try:
-                    d = handle_request(req)                
-                    response = json.dumps(dict(result=d))+"\n"
+                    d = handle_request(req)
+                    response = json.dumps(dict(result=d)) + "\n"
                 except Exception, err:
-                    response = json.dumps(dict(error=str(err)))+"\n"
+                    response = json.dumps(dict(error=str(err))) + "\n"
                     traceback.print_exc()
-                
+
                 sockfile.write(response)
                 sockfile.flush()
         except:
