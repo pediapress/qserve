@@ -13,7 +13,7 @@ def get_version():
 from distutils.core import setup
 setup(name='qserve',
       version=get_version(),
-      url="http://github.com/schmir/qserve",
+      url="https://github.com/pediapress/qserve",
       description="job queue server",
       license="BSD License",
       maintainer="pediapress.com",
