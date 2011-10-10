@@ -7,5 +7,6 @@ include qs/qserve.py
 include qs/rpcclient.py
 include qs/rpcserver.py
 include qs/slave.py
+include setup.cfg
 include setup.py
 include tests/test_proc.py
