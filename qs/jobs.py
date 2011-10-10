@@ -70,6 +70,13 @@ class workq(object):
             self.id2job[j.jobid] = j
             if not j.done:
                 self.timeoutq.append((j.timeout, j))
+                channel = j.channel
+                try:
+                    q = self.channel2q[channel]
+                except KeyError:
+                    q = self.channel2q[channel] = []
+                heapq.heappush(q, j)
+
         heapq.heapify(self.timeoutq)
 
     def _preenjobq(self, q):
