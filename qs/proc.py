@@ -3,12 +3,12 @@
 from __future__ import with_statement
 
 import os, signal
-from gevent import socket, core, event, Timeout
+from gevent import socket, core, event, Timeout, version_info
 
 pid2status = {}
 
 
-def got_signal(ev, signum):
+def got_signal(*args):
     while 1:
         try:
             pid, st = os.waitpid(-1, os.WNOHANG)
@@ -18,7 +18,11 @@ def got_signal(ev, signum):
         except OSError:
             return
 
-core.event(core.EV_SIGNAL | core.EV_PERSIST, signal.SIGCHLD, got_signal).add()
+if version_info[:2] < (1, 0):
+    core.event(core.EV_SIGNAL | core.EV_PERSIST, signal.SIGCHLD, got_signal).add()
+else:
+    signal.signal(signal.SIGCHLD, got_signal)
+
 
 
 def run_cmd(args, timeout=None):
