@@ -10,3 +10,4 @@ include qs/slave.py
 include setup.cfg
 include setup.py
 include tests/test_proc.py
+include tox.ini

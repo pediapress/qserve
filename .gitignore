@@ -13,3 +13,7 @@
 .ropeproject
 build
 ID
+/MANIFEST
+/dist/
+/.tox/
+__pycache__/
