@@ -14,5 +14,5 @@ def test_run_cmd_timeout():
     st, out = proc.run_cmd([sys.executable, "-c" "import time; time.sleep(10)"], 0.5)
     needed = time.time() - stime
     assert (st, out) == (9, "")
-    assert needed >= 0.5
+    assert needed >= 0.49
     assert needed < 1.0
