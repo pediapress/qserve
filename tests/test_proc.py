@@ -16,3 +16,7 @@ def test_run_cmd_timeout():
     assert (st, out) == (9, "")
     assert needed >= 0.49
     assert needed < 1.0
+
+
+def test_run_cmd_trigger_loopexit():
+    proc.run_cmd([sys.executable, "-uc", "import time, os, this; os.close(1); os.close(2); time.sleep(1)"])
