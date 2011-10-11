@@ -68,3 +68,19 @@ def test_pushjob_pop():
     g1.join()
     res = g1.get()
     assert res is j2
+
+
+def test_stats():
+    w = jobs.workq()
+    joblst = [w.push("render", payload=i) for i in range(10)]
+    stats = w.getstats()
+    print "stats before", stats
+    assert stats == {'count': 10, 'busy': {'render': 10}, 'channel2stat': {}, 'numjobs': 10}
+
+    w.killjobs(joblst[1:])
+
+    stats = w.getstats()
+    print "stats after", stats
+    assert stats == {'count': 10, 'busy': {'render': 1}, 'channel2stat': {'render': {'success': 0, 'killed': 9, 'timeout': 0, 'error': 0}}, 'numjobs': 10}
+    print w.waitjobs(joblst[1:])
+
