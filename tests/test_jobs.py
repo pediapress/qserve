@@ -5,6 +5,10 @@ from qs import jobs
 import gevent
 
 
+def loaddump(obj):
+    return cPickle.loads(cPickle.dumps(obj))
+
+
 def test_job_defaults():
     j1 = jobs.job("render")
     assert j1.ttl == 3600
@@ -13,7 +17,7 @@ def test_job_defaults():
 
 def test_job_pickle():
     j1 = jobs.job("render", payload=(1, 2, 3), priority=5, jobid=11, timeout=100, ttl=20)
-    j2 = cPickle.loads(cPickle.dumps(j1))
+    j2 = loaddump(j1)
 
     assert j2.channel == "render"
     assert j2.payload == (1, 2, 3)
@@ -21,13 +25,24 @@ def test_job_pickle():
     assert j2.jobid == 11
     assert j2.timeout == j1.timeout
     assert j2.ttl == 20
+    assert j2.done == False
+
+
+def test_job_unpickle_event():
+    j = jobs.job("render")
+    j = loaddump(j)
+    assert not j.finish_event.is_set()
+
+    j.done = True
+    j = loaddump(j)
+    assert j.finish_event.is_set()
 
 
 def test_workq_pickle():
     w = jobs.workq()
     w.pushjob(jobs.job("render1"))
     w.pushjob(jobs.job("render2"))
-    w2 = cPickle.loads(cPickle.dumps(w))
+    w2 = loaddump(w)
     print w.__dict__
     print w2.__dict__
     assert w.__dict__ == w2.__dict__
@@ -48,11 +63,8 @@ def test_pushjob_pop():
     g1 = gevent.spawn(w.pop, ["render"])
     gevent.sleep(0)
 
-
     j2 = jobs.job("render", payload=" world")
     w.pushjob(j2)
     g1.join()
     res = g1.get()
     assert res is j2
-
-
