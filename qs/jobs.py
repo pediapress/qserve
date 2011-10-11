@@ -167,10 +167,18 @@ class workq(object):
             print "watchdog: dropped %s jobs, marked %s jobs with a deadline" % (dcount, mcount)
 
     def getstats(self):
+
+        def count_not_done(lst):
+            res = 0
+            for x in lst:
+                if not x.done:
+                    res += 1
+            return res
+
         stats = dict(count=self.count,
                      numjobs=len(self.id2job),
                      channel2stat=self._channel2count,
-                     busy=dict([(c, len(todo)) for c, todo in self.channel2q.items()]))
+                     busy=dict([(c, count_not_done(todo)) for c, todo in self.channel2q.items()]))
         return stats
 
     def report(self):
