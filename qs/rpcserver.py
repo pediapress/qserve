@@ -46,7 +46,9 @@ class server(object):
         self.host = host
         self.secret = secret
         self.get_request_handler = get_request_handler
-        self.sock = socket.tcp_listener((self.host, self.port))
+        from gevent.server import StreamServer
+        self.streamserver = StreamServer((host, port), self.handle_client)
+        self.streamserver.pre_start()
         self.clientcount = 0
 
         if is_allowed is None:
@@ -55,8 +57,7 @@ class server(object):
             self.is_allowed = is_allowed
 
     def run_forever(self):
-        from gevent.server import StreamServer
-        StreamServer(self.sock, self.handle_client).serve_forever()
+        self.streamserver.serve_forever()
 
     # def auth():
             # if secret:
