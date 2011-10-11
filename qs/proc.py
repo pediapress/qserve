@@ -44,6 +44,10 @@ def run_cmd(args, timeout=None):
 
     chunks = []
 
+    # prevent loopexit. see test_run_cmd_trigger_loopexit in test_proc.py
+    if timeout is None:
+        timeout = 2**30
+
     timeout = Timeout(timeout)
     timeout.start()
     try:
