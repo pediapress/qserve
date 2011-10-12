@@ -97,3 +97,17 @@ def test_stats():
     assert stats == {'count': 10, 'busy': {'render': 1}, 'channel2stat': {'render': {'success': 0, 'killed': 9, 'timeout': 0, 'error': 0}}, 'numjobs': 10}
     print w.waitjobs(joblst[1:])
 
+
+def test_pop_does_preen():
+    w = jobs.workq()
+    jlist = [jobs.job("render", payload=i) for i in range(10)]
+    for j in jlist:
+        w.pushjob(j)
+
+    for j in jlist[:-1]:
+        w._mark_finished(j, killed=True)
+
+    print w.__dict__
+    j = w.pop(["render"])
+    print j, jlist
+    assert j is jlist[-1]
