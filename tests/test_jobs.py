@@ -5,6 +5,10 @@ from qs import jobs
 import gevent
 
 
+def pytest_funcarg__wq(request):
+    return jobs.workq()
+
+
 def loaddump(obj):
     return cPickle.loads(cPickle.dumps(obj))
 
@@ -51,63 +55,73 @@ def test_job_unpickle_event():
     assert j.finish_event.is_set()
 
 
-def test_workq_pickle():
-    w = jobs.workq()
-    w.pushjob(jobs.job("render1"))
-    w.pushjob(jobs.job("render2"))
-    w2 = loaddump(w)
-    print w.__dict__
+def test_workq_pickle(wq):
+    wq.pushjob(jobs.job("render1"))
+    wq.pushjob(jobs.job("render2"))
+    w2 = loaddump(wq)
+    print wq.__dict__
     print w2.__dict__
-    assert w.__dict__ == w2.__dict__
+    assert wq.__dict__ == w2.__dict__
 
 
-def test_pushjob_pop():
-    w = jobs.workq()
+def test_pushjob_automatic_jobid(wq):
+    for x in range(1, 10):
+        j = jobs.job("render", payload="hello")
+        jid = wq.pushjob(j)
+        assert (jid, j.jobid) == (x, x)
+
+
+def test_pushjob_no_automatic_jobid(wq):
+    for jobid in ["", "123", unichr(255), 0]:
+        j = jobs.job("render", payload="hello", jobid=jobid)
+        jid = wq.pushjob(j)
+        assert (jid, j.jobid) == (jobid, jobid)
+
+
+def test_pushjob_pop(wq):
     j1 = jobs.job("render", payload="hello")
-    jid = w.pushjob(j1)
+    jid = wq.pushjob(j1)
     assert jid == 1
     assert j1.jobid == 1
-    assert len(w.channel2q["render"]) == 1
-    assert len(w.timeoutq) == 1
+    assert len(wq.channel2q["render"]) == 1
+    assert len(wq.timeoutq) == 1
 
-    j = w.pop(["foo", "render", "bar"])
+    j = wq.pop(["foo", "render", "bar"])
     assert j is j1
 
-    g1 = gevent.spawn(w.pop, ["render"])
+    g1 = gevent.spawn(wq.pop, ["render"])
     gevent.sleep(0)
 
     j2 = jobs.job("render", payload=" world")
-    w.pushjob(j2)
+    wq.pushjob(j2)
     g1.join()
     res = g1.get()
     assert res is j2
 
 
-def test_stats():
-    w = jobs.workq()
-    joblst = [w.push("render", payload=i) for i in range(10)]
-    stats = w.getstats()
+def test_stats(wq):
+    joblst = [wq.push("render", payload=i) for i in range(10)]
+    stats = wq.getstats()
     print "stats before", stats
     assert stats == {'count': 10, 'busy': {'render': 10}, 'channel2stat': {}, 'numjobs': 10}
 
-    w.killjobs(joblst[1:])
+    wq.killjobs(joblst[1:])
 
-    stats = w.getstats()
+    stats = wq.getstats()
     print "stats after", stats
     assert stats == {'count': 10, 'busy': {'render': 1}, 'channel2stat': {'render': {'success': 0, 'killed': 9, 'timeout': 0, 'error': 0}}, 'numjobs': 10}
-    print w.waitjobs(joblst[1:])
+    print wq.waitjobs(joblst[1:])
 
 
-def test_pop_does_preen():
-    w = jobs.workq()
+def test_pop_does_preen(wq):
     jlist = [jobs.job("render", payload=i) for i in range(10)]
     for j in jlist:
-        w.pushjob(j)
+        wq.pushjob(j)
 
     for j in jlist[:-1]:
-        w._mark_finished(j, killed=True)
+        wq._mark_finished(j, killed=True)
 
-    print w.__dict__
-    j = w.pop(["render"])
+    print wq.__dict__
+    j = wq.pop(["render"])
     print j, jlist
     assert j is jlist[-1]
