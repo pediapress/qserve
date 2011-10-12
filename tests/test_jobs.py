@@ -2,7 +2,7 @@
 
 import cPickle
 from qs import jobs
-import gevent
+from gevent import spawn, sleep
 
 
 def pytest_funcarg__wq(request):
@@ -89,8 +89,8 @@ def test_pushjob_pop(wq):
     j = wq.pop(["foo", "render", "bar"])
     assert j is j1
 
-    g1 = gevent.spawn(wq.pop, ["render"])
-    gevent.sleep(0)
+    g1 = spawn(wq.pop, ["render"])
+    sleep(0)
 
     j2 = jobs.job("render", payload=" world")
     wq.pushjob(j2)
@@ -125,3 +125,21 @@ def test_pop_does_preen(wq):
     j = wq.pop(["render"])
     print j, jlist
     assert j is jlist[-1]
+
+
+def test_pop_new_channel(wq):
+    wq.push("foo")
+    wq.pop([])  # wq.channel2q == {'foo': []} now
+    print wq.__dict__
+
+    gr = spawn(wq.pop, [])
+    sleep(0)
+
+    jid = wq.push("render")
+    try:
+        res = gr.get(timeout=0.2)
+    except:
+        gr.kill()
+        raise
+
+    assert res.jobid == jid
