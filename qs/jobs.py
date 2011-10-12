@@ -28,6 +28,9 @@ class job(object):
         if ttl is not None:
             self.ttl = ttl
 
+    def __repr__(self):
+        return "<job %r at %s>" % (self.jobid, hex(id(self)))
+
     def __cmp__(self, other):
         return cmp((self.priority, self.serial), (other.priority, other.serial))
 

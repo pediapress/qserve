@@ -15,6 +15,19 @@ def test_job_defaults():
     assert j1.priority == 0
 
 
+def test_job_repr_unicode():
+    r = repr(jobs.job("render", jobid=unichr(256)))
+    assert isinstance(r, str)
+
+
+def test_job_repr_none():
+    repr(jobs.job("render"))
+
+
+def test_job_repr_int():
+    repr(jobs.job("render", jobid=41))
+
+
 def test_job_pickle():
     j1 = jobs.job("render", payload=(1, 2, 3), priority=5, jobid=11, timeout=100, ttl=20)
     j2 = loaddump(j1)
