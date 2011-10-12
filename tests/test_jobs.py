@@ -1,6 +1,6 @@
 #! /usr/bin/env py.test
 
-import time, cPickle
+import sys, time, cPickle, StringIO
 from qs import jobs
 from gevent import spawn, sleep
 
@@ -113,6 +113,28 @@ def test_stats(wq):
     print "stats after", stats
     assert stats == {'count': 10, 'busy': {'render': 1}, 'channel2stat': {'render': {'success': 0, 'killed': 9, 'timeout': 0, 'error': 0}}, 'numjobs': 10}
     print wq.waitjobs(joblst[1:])
+
+
+def test_report(wq, monkeypatch):
+
+    def get_report():
+        stdout = StringIO.StringIO()
+        monkeypatch.setattr(sys, "stdout", stdout)
+        wq.report()
+        monkeypatch.undo()
+        return stdout.getvalue()
+
+    out = get_report()
+    assert "all channels idle" in out
+
+    joblst = [wq.push("render", payload=i) for i in range(10)]
+    wq.killjobs(joblst[2:])
+
+    out = get_report()
+    print "--- OUTPUT ---\n", out, "\n------------"
+
+    assert "render 10" not in out
+    assert "render 2\n" in out
 
 
 def test_pop_does_preen(wq):
