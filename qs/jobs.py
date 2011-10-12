@@ -190,13 +190,13 @@ class workq(object):
         print "=== report %s ===" % (time.ctime(), )
         print "have %s jobs" % len(self.id2job)
         print "count:", self.count
-        busy = []
-        for c, todo in self.channel2q.items():
-            if todo:
-                busy.append((c, len(todo)))
+
+        stats = self.getstats()
+        busy = stats["busy"].items()
+        busy.sort()
+
         if busy:
             print "busy channels:"
-            todo.sort()
             for c, todo in busy:
                 print c, todo
         else:
