@@ -57,6 +57,10 @@ def test_job_unpickle_event():
     assert j.finish_event.is_set()
 
 
+def test_job_json():
+    jobs.job("render", jobid=unichr(256))._json()
+
+
 def test_workq_pickle(wq):
     wq.pushjob(jobs.job("render1"))
     wq.pushjob(jobs.job("render2"))
@@ -137,6 +141,10 @@ def test_report(wq, monkeypatch):
     assert "render 2\n" in out
 
 
+def test_killjobs_unknown_jobid(wq):
+    wq.killjobs([1, 2, 3])
+
+
 def test_pop_does_preen(wq):
     jlist = [jobs.job("render", payload=i) for i in range(10)]
     for j in jlist:
@@ -167,3 +175,16 @@ def test_pop_new_channel(wq):
         raise
 
     assert res.jobid == jid
+
+
+def test_updatejob(wq):
+    j = jobs.job("render")
+    wq.pushjob(j)
+    jid = j.jobid
+    assert j.info == dict()
+
+    wq.updatejob(jid, dict(bar=5))
+    assert j.info == dict(bar=5)
+
+    wq.updatejob(jid, dict(foo=7))
+    assert j.info == dict(foo=7, bar=5)
