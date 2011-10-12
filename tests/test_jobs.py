@@ -1,6 +1,6 @@
 #! /usr/bin/env py.test
 
-import cPickle
+import time, cPickle
 from qs import jobs
 from gevent import spawn, sleep
 
@@ -14,9 +14,11 @@ def loaddump(obj):
 
 
 def test_job_defaults():
+    now = time.time()
     j1 = jobs.job("render")
     assert j1.ttl == 3600
     assert j1.priority == 0
+    assert j1.timeout >= now + 120
 
 
 def test_job_repr_unicode():

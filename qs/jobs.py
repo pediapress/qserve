@@ -16,12 +16,14 @@ class job(object):
     ttl = 3600
     drop = False
 
-    def __init__(self, channel, payload=None, priority=0, jobid=None, timeout=120, ttl=None):
+    def __init__(self, channel, payload=None, priority=0, jobid=None, timeout=None, ttl=None):
         self.payload = payload
         self.priority = priority
         self.channel = channel
         self.info = {}
         self.jobid = jobid
+        if timeout is None:
+            timeout = 120.0
         self.timeout = time.time() + timeout
         self.finish_event = event.Event()
 
@@ -262,9 +264,6 @@ class workq(object):
         if jobid is not None:
             if jobid in self.id2job and self.id2job[jobid].error != "killed":
                 return jobid
-
-        if timeout is None:
-            timeout = 120
 
         return self.pushjob(job(payload=payload, priority=priority, channel=channel, jobid=jobid, timeout=timeout, ttl=ttl))
 
