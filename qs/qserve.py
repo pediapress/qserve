@@ -1,10 +1,8 @@
 #! /usr/bin/env python
-import os
-import cPickle
-import getopt  # yes, getopt!
-import sys
 
-from qs import jobs
+import sys, os, getopt, cPickle
+import gevent
+from qs import jobs, rpcserver
 
 
 class db(object):
@@ -77,31 +75,110 @@ class qplugin(object):
             self.workq.pushjob(j)
 
 
+class _main(object):
+    def __init__(self, port, interface, datadir, allowed_ips):
+        self.port = port
+        self.interface = interface
+        self.datadir = datadir
+        self.allowed_ips = allowed_ips
+        self.loaddb()
+
+    def loaddb(self):
+        datadir = self.datadir
+        if datadir is not None:
+            if not os.path.isdir(datadir):
+                sys.exit("%r is not a directory" % (datadir, ))
+            qpath = os.path.join(datadir, "workq.pickle")
+        else:
+            qpath = None
+
+        if qpath and os.path.exists(qpath):
+            print "loading", qpath
+            self.db = cPickle.load(open(qpath))
+            print "loaded", len(self.db.workq.id2job), "jobs"
+        else:
+            self.db = db()
+        self.qpath = qpath
+
+    def savedb(self):
+        if self.qpath:
+            print "saving", self.qpath
+            cPickle.dump(self.db, open(self.qpath, "w"), 2)
+
+    def is_allowed_ip(self, ip):
+        return not self.allowed_ips or ip in self.allowed_ips
+
+    def handletimeouts(self):
+        while 1:
+            self.db.workq.handletimeouts()
+            gevent.sleep(1)
+
+    def watchdog(self):
+        while 1:
+            self.db.workq.dropdead()
+            gevent.sleep(15)
+
+    def report(self):
+        while 1:
+            self.db.workq.report()
+            gevent.sleep(20)
+
+    def run(self):
+        workers = [gevent.spawn(x) for x in [self.report, self.watchdog, self.handletimeouts]]
+
+        class handler(rpcserver.request_handler, qplugin):
+            def __init__(self, **kwargs):
+                super(handler, self).__init__(**kwargs)
+
+            workq = self.db.workq
+            db = self.db
+
+        s = rpcserver.server(self.port, host=self.interface, get_request_handler=handler, is_allowed=self.is_allowed_ip)
+        print "listening on %s:%s" % (self.interface, self.port)
+        try:
+            s.run_forever()
+        except KeyboardInterrupt:
+            print "interrupted"
+        finally:
+            self.savedb()
+            for w in workers:
+                w.kill()
+
+
 def usage():
     print "mw-qserve [-p PORT] [-i INTERFACE] [-d DATADIR]"
 
 
-def main():
-    from qs.rpcserver import request_handler, server
+def port_from_str(port):
+    port = int(port)
+    if port <= 0 or port > 65535:
+        raise ValueError("bad port")
+    return  port
+
+
+def parse_options(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "a:d:p:i:h", ["help", "port=", "interface="])
+        opts, args = getopt.getopt(argv, "a:d:p:i:h", ["help", "port=", "interface="])
     except getopt.GetoptError, err:
         print str(err)
+        sys.exit(10)
+
+    if args:
+        print "too many arguments"
         sys.exit(10)
 
     port = 14311
     interface = "0.0.0.0"
     datadir = None
-
     allowed_ips = set()
 
     for o, a in opts:
         if o in ("-p", "--port"):
             try:
-                port = int(a)
-                if port <= 0 or port > 65535:
-                    raise ValueError("bad port")
+                port = port_from_str(a)
             except ValueError:
                 print "expected positive integer as argument to %s" % o
                 sys.exit(10)
@@ -115,63 +192,11 @@ def main():
             usage()
             sys.exit(0)
 
-    if datadir is not None:
-        if not os.path.isdir(datadir):
-            sys.exit("%r is not a directory" % (datadir, ))
-        qpath = os.path.join(datadir, "workq.pickle")
-    else:
-        qpath = None
+    return dict(port=port, interface=interface, datadir=datadir, allowed_ips=allowed_ips)
 
-    if qpath and os.path.exists(qpath):
-        print "loading", qpath
-        d = cPickle.load(open(qpath))
-        print "loaded", len(d.workq.id2job), "jobs"
-    else:
-        d = db()
 
-    def handletimeouts():
-        while 1:
-            d.workq.handletimeouts()
-            gevent.sleep(1)
-
-    def watchdog():
-        while 1:
-            d.workq.dropdead()
-            gevent.sleep(15)
-
-    def report():
-        while 1:
-            d.workq.report()
-            gevent.sleep(20)
-
-    import gevent
-    gevent.spawn(report)
-    gevent.spawn(watchdog)
-    gevent.spawn(handletimeouts)
-
-    class handler(request_handler, qplugin):
-        def __init__(self, **kwargs):
-            super(handler, self).__init__(**kwargs)
-
-        workq = d.workq
-        db = d
-
-    if allowed_ips:
-        def is_allowed((ip, port)):
-            return ip in allowed_ips
-    else:
-        is_allowed = lambda x: True
-
-    s = server(port, host=interface, get_request_handler=handler, is_allowed=is_allowed)
-    print "listening on %s:%s" % (interface, port)
-    try:
-        s.run_forever()
-    except KeyboardInterrupt:
-        print "interrupted"
-    finally:
-        if qpath:
-            print "saving", qpath
-            cPickle.dump(d, open(qpath, "w"), 2)
+def main(argv=None):
+    _main(**parse_options(argv=argv)).run()
 
 
 if __name__ == "__main__":

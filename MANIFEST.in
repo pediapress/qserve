@@ -12,4 +12,5 @@ include setup.cfg
 include setup.py
 include tests/test_jobs.py
 include tests/test_proc.py
+include tests/test_qserve.py
 include tox.ini
