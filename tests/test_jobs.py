@@ -9,9 +9,33 @@ def pytest_funcarg__wq(request):
     return jobs.workq()
 
 
+def pytest_funcarg__faketime(request):
+    monkeypatch = request.getfuncargvalue("monkeypatch")
+
+    class faketime(object):
+        def __init__(self):
+            self.current_time = time.time()
+
+        def __call__(self):
+            return self.current_time
+
+        def __iadd__(self, value):
+            self.current_time += value
+            return self
+
+        def __repr__(self):
+            return "<faketime %s>" % self.current_time
+
+    ft = faketime()
+    monkeypatch.setattr(time, "time", ft)
+    return ft
+
+
 def loaddump(obj):
     return cPickle.loads(cPickle.dumps(obj))
 
+
+# -- tests
 
 def test_job_defaults():
     now = time.time()
@@ -188,3 +212,39 @@ def test_updatejob(wq):
 
     wq.updatejob(jid, dict(foo=7))
     assert j.info == dict(foo=7, bar=5)
+
+
+def test_handletimeouts_empty(wq):
+    wq.handletimeouts()
+
+
+def test_handletimeouts(wq, faketime):
+    j1 = jobs.job("render", timeout=10)
+    j2 = jobs.job("render", timeout=9)
+
+    wq.pushjob(j1)
+    wq.pushjob(j2)
+    assert wq.timeoutq[0][1] is j2
+
+    faketime += 9.5
+    wq.handletimeouts()
+
+    assert not j1.done
+    assert j2.done
+    assert j2.error == "timeout"
+
+
+def test_handletimeouts_unless_done(wq, faketime):
+    j1 = jobs.job("render", timeout=10)
+    j2 = jobs.job("render", timeout=9)
+
+    wq.pushjob(j1)
+    wq.pushjob(j2)
+
+    wq._mark_finished(j2)
+    faketime += 11
+    wq.handletimeouts()
+    assert not wq.timeoutq
+
+    assert j1.error == "timeout"
+    assert j2.error is None
