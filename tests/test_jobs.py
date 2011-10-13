@@ -248,3 +248,29 @@ def test_handletimeouts_unless_done(wq, faketime):
 
     assert j1.error == "timeout"
     assert j2.error is None
+
+
+def test_mark_finished(wq):
+    def mark_finished(**kw):
+        j = jobs.job("render")
+        wq.pushjob(j)
+        wq._mark_finished(j, **kw)
+        return j
+
+    j = mark_finished(error="not found")
+    assert j.done
+    assert j.error == "not found"
+    assert wq._channel2count["render"] == dict(error=1, timeout=0, killed=0, success=0)
+
+    wq._mark_finished(j, error="no")
+    assert j.error == "not found"
+    assert wq._channel2count["render"] == dict(error=1, timeout=0, killed=0, success=0)
+
+    mark_finished(error="killed")
+    assert wq._channel2count["render"] == dict(error=1, timeout=0, killed=1, success=0)
+
+    mark_finished()
+    assert wq._channel2count["render"] == dict(error=1, timeout=0, killed=1, success=1)
+
+    mark_finished(error="timeout")
+    assert wq._channel2count["render"] == dict(error=1, timeout=1, killed=1, success=1)
