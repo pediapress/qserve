@@ -24,7 +24,6 @@ else:
     signal.signal(signal.SIGCHLD, got_signal)
 
 
-
 def run_cmd(args, timeout=None):
     sp = socket.socketpair()
     pid = os.fork()
@@ -46,7 +45,7 @@ def run_cmd(args, timeout=None):
 
     # prevent loopexit. see test_run_cmd_trigger_loopexit in test_proc.py
     if timeout is None:
-        timeout = 2**30
+        timeout = 2 ** 30
 
     timeout = Timeout(timeout)
     timeout.start()
