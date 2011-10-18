@@ -9,6 +9,12 @@ def pytest_funcarg__wq(request):
     return jobs.workq()
 
 
+def pytest_funcarg__spawn(request):
+    p = pool.Pool()
+    request.addfinalizer(p.kill)
+    return p.spawn
+
+
 def pytest_funcarg__faketime(request):
     monkeypatch = request.getfuncargvalue("monkeypatch")
 
@@ -232,6 +238,21 @@ def test_handletimeouts(wq, faketime):
     assert not j1.done
     assert j2.done
     assert j2.error == "timeout"
+
+
+def test_handletimeouts_with_client_waiting(wq, faketime, spawn):
+    spawn(wq.pop, ["render"])
+    sleep(0.0)
+    j = jobs.job("render", timeout=9.5)
+    wq.pushjob(j)
+    assert len(wq.timeoutq) == 1
+    assert wq.timeoutq[0][1] is j
+
+    faketime += 10
+    wq.handletimeouts()
+
+    assert j.done
+    assert j.error == "timeout"
 
 
 def test_handletimeouts_unless_done(wq, faketime):
