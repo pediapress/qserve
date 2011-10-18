@@ -2,7 +2,7 @@
 
 import sys, os, getopt, cPickle
 import gevent
-from qs import jobs, rpcserver
+from qs import jobs, rpcserver, misc
 
 
 class db(object):
@@ -109,22 +109,17 @@ class _main(object):
         return not self.allowed_ips or ip in self.allowed_ips
 
     def handletimeouts(self):
-        while 1:
-            self.db.workq.handletimeouts()
-            gevent.sleep(1)
+        self.db.workq.handletimeouts()
 
     def watchdog(self):
-        while 1:
-            self.db.workq.dropdead()
-            gevent.sleep(15)
+        self.db.workq.dropdead()
 
     def report(self):
-        while 1:
-            self.db.workq.report()
-            gevent.sleep(20)
+        self.db.workq.report()
 
     def run(self):
-        workers = [gevent.spawn(x) for x in [self.report, self.watchdog, self.handletimeouts]]
+        loops = [(self.report, 20), (self.watchdog, 15), (self.handletimeouts, 1)]
+        workers = [gevent.spawn(misc.call_in_loop(sleeptime, fun)) for fun, sleeptime in loops]
 
         class handler(rpcserver.request_handler, qplugin):
             def __init__(self, **kwargs):
