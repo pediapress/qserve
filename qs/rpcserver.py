@@ -43,11 +43,13 @@ class request_handler(dispatcher):
 class ClientGreenlet(Greenlet):
     clientid = None
     status = ""
+
     def __str__(self):
         return "<%s: %s>" % (self.clientid, self.status)
 
     def __repr__(self):
         return "<Client %s>" % self.clientid
+
 
 class server(object):
     def __init__(self, port=8080, host="", get_request_handler=None, secret=None, is_allowed=None):
@@ -72,20 +74,19 @@ class server(object):
         print msg
 
     def handle_client(self, sock, addr):
-        client = (sock, addr)
-        if not self.is_allowed(client[1]):
-            self.log("+DENY %r" % (client[1], ))
-            client[0].close()
+        if not self.is_allowed(addr):
+            self.log("+DENY %r" % (addr, ))
+            sock.close()
             return
 
         sockfile = None
         current = getcurrent()
         try:
             self.clientcount += 1
-            clientid = "<%s %s:%s>" % (self.clientcount, client[1][0], client[1][1])
+            clientid = "<%s %s:%s>" % (self.clientcount, addr[0], addr[1])
             current.clientid = clientid
-            sockfile = client[0].makefile()
-            handle_request = self.get_request_handler(client=client, clientid=clientid)
+            sockfile = sock.makefile()
+            handle_request = self.get_request_handler(client=(sock, addr), clientid=clientid)
 
             # self.log("+connect: %s" % (clientid, ))
 
@@ -119,7 +120,7 @@ class server(object):
         finally:
             current.status = "dead"
             # self.log("-disconnect: %s" % (clientid,))
-            client[0].close()
+            sock.close()
             if sockfile is not None:
                 sockfile.close()
             handle_request.shutdown()
