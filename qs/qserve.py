@@ -116,10 +116,13 @@ class _main(object):
 
     def report(self):
         self.db.workq.report()
+        pool = self.server.pool
+        print "= %s clients" % len(pool)
+        for cl in pool:
+            print cl
+        print
 
     def run(self):
-        loops = [(self.report, 20), (self.watchdog, 15), (self.handletimeouts, 1)]
-        workers = [gevent.spawn(misc.call_in_loop(sleeptime, fun)) for fun, sleeptime in loops]
 
         class handler(rpcserver.request_handler, qplugin):
             def __init__(self, **kwargs):
@@ -128,8 +131,12 @@ class _main(object):
             workq = self.db.workq
             db = self.db
 
-        s = rpcserver.server(self.port, host=self.interface, get_request_handler=handler, is_allowed=self.is_allowed_ip)
+        s = self.server = rpcserver.server(self.port, host=self.interface, get_request_handler=handler, is_allowed=self.is_allowed_ip)
         print "listening on %s:%s" % (self.interface, self.port)
+
+        loops = [(self.report, 20), (self.watchdog, 15), (self.handletimeouts, 1)]
+        workers = [gevent.spawn(misc.call_in_loop(sleeptime, fun)) for fun, sleeptime in loops]
+
         try:
             s.run_forever()
         except KeyboardInterrupt:

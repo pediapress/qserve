@@ -7,7 +7,7 @@ try:
 except ImportError:
     import json
 
-from gevent import socket
+from gevent import socket, pool, server as gserver, Greenlet, getcurrent
 
 
 def key2str(kwargs):
@@ -40,14 +40,23 @@ class request_handler(dispatcher):
         super(request_handler, self).shutdown()
 
 
+class ClientGreenlet(Greenlet):
+    clientid = None
+    status = ""
+    def __str__(self):
+        return "<%s: %s>" % (self.clientid, self.status)
+
+    def __repr__(self):
+        return "<Client %s>" % self.clientid
+
 class server(object):
     def __init__(self, port=8080, host="", get_request_handler=None, secret=None, is_allowed=None):
         self.port = port
         self.host = host
         self.secret = secret
         self.get_request_handler = get_request_handler
-        from gevent.server import StreamServer
-        self.streamserver = StreamServer((host, port), self.handle_client)
+        self.pool = pool.Pool(1024, ClientGreenlet)
+        self.streamserver = gserver.StreamServer((host, port), self.handle_client, spawn=self.pool.spawn)
         self.streamserver.pre_start()
         self.clientcount = 0
 
@@ -69,16 +78,19 @@ class server(object):
             client[0].close()
             return
 
+        sockfile = None
+        current = getcurrent()
         try:
             self.clientcount += 1
             clientid = "<%s %s:%s>" % (self.clientcount, client[1][0], client[1][1])
-
+            current.clientid = clientid
             sockfile = client[0].makefile()
             handle_request = self.get_request_handler(client=client, clientid=clientid)
 
             # self.log("+connect: %s" % (clientid, ))
 
             while 1:
+                current.status = "idle"
                 line = sockfile.readline()
                 # print "got:",  repr(line)
                 if not line:
@@ -90,6 +102,7 @@ class server(object):
                     self.log("+protocol error %s: %s" % (clientid, err))
                     break
 
+                current.status = "dispatching: %s" % line[:-1]
                 try:
                     d = handle_request(req)
                     response = json.dumps(dict(result=d)) + "\n"
@@ -97,13 +110,16 @@ class server(object):
                     response = json.dumps(dict(error=str(err))) + "\n"
                     traceback.print_exc()
 
+                current.status = "sending response: %s" % response[:-1]
                 sockfile.write(response)
                 sockfile.flush()
         except:
             traceback.print_exc()
 
         finally:
+            current.status = "dead"
             # self.log("-disconnect: %s" % (clientid,))
             client[0].close()
-            sockfile.close()
+            if sockfile is not None:
+                sockfile.close()
             handle_request.shutdown()
