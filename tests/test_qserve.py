@@ -20,8 +20,8 @@ def test_port_from_str():
     p = qserve.port_from_str
     pytest.raises(ValueError, p, "1.0")
     pytest.raises(ValueError, p, "-1")
-    pytest.raises(ValueError, p, "0")
     pytest.raises(ValueError, p, "65536")
+    assert p("0") == 0
     assert p("1") == 1
     assert p("65535") == 65535
 

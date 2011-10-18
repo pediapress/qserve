@@ -132,6 +132,7 @@ class _main(object):
             db = self.db
 
         s = self.server = rpcserver.server(self.port, host=self.interface, get_request_handler=handler, is_allowed=self.is_allowed_ip)
+        self.port = s.streamserver.socket.getsockname()[1]
         print "listening on %s:%s" % (self.interface, self.port)
 
         loops = [(self.report, 20), (self.watchdog, 15), (self.handletimeouts, 1)]
@@ -145,14 +146,16 @@ class _main(object):
         except ValueError:
             pass
         else:
-            print "starting backdoor on 127.0.0.1:%s" % backdoor_port
             from gevent import backdoor
             bs = backdoor.BackdoorServer(
                 ("localhost", backdoor_port),
                 locals=dict(_main=self,
                             workers=workers,
                             server=s,
-                            workq=self.db.workq)).start()
+                            workq=self.db.workq))
+            bs.pre_start()
+            print "starting backdoor on 127.0.0.1:%s" % bs.socket.getsockname()[1]
+            bs.start()
 
         try:
             s.run_forever()
@@ -171,7 +174,7 @@ def usage():
 
 def port_from_str(port):
     port = int(port)
-    if port <= 0 or port > 65535:
+    if port < 0 or port > 65535:
         raise ValueError("bad port")
     return  port
 
