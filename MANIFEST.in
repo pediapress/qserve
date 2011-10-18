@@ -3,6 +3,7 @@ include README.rst
 include conftest.py
 include qs/__init__.py
 include qs/jobs.py
+include qs/misc.py
 include qs/proc.py
 include qs/qserve.py
 include qs/rpcclient.py
@@ -10,6 +11,7 @@ include qs/rpcserver.py
 include qs/slave.py
 include setup.cfg
 include setup.py
+include tests/test_call_in_loop.py
 include tests/test_jobs.py
 include tests/test_proc.py
 include tests/test_qserve.py
