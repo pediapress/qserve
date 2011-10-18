@@ -74,7 +74,7 @@ class server(object):
         print msg
 
     def handle_client(self, sock, addr):
-        if not self.is_allowed(addr):
+        if not self.is_allowed(addr[0]):
             self.log("+DENY %r" % (addr, ))
             sock.close()
             return
