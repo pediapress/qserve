@@ -2,7 +2,7 @@
 
 import sys, time, cPickle, StringIO
 from qs import jobs
-from gevent import spawn, sleep
+from gevent import sleep, pool
 
 
 def pytest_funcarg__wq(request):
@@ -114,7 +114,7 @@ def test_pushjob_no_automatic_jobid(wq):
         assert (jid, j.jobid) == (jobid, jobid)
 
 
-def test_pushjob_pop(wq):
+def test_pushjob_pop(wq, spawn):
     j1 = jobs.job("render", payload="hello")
     jid = wq.pushjob(j1)
     assert jid == 1
@@ -189,7 +189,7 @@ def test_pop_does_preen(wq):
     assert j is jlist[-1]
 
 
-def test_pop_new_channel(wq):
+def test_pop_new_channel(wq, spawn):
     wq.push("foo")
     wq.pop([])  # wq.channel2q == {'foo': []} now
     print wq.__dict__
@@ -198,12 +198,7 @@ def test_pop_new_channel(wq):
     sleep(0)
 
     jid = wq.push("render")
-    try:
-        res = gr.get(timeout=0.2)
-    except:
-        gr.kill()
-        raise
-
+    res = gr.get(timeout=0.2)
     assert res.jobid == jid
 
 
