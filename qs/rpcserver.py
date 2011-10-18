@@ -59,22 +59,6 @@ class server(object):
     def run_forever(self):
         self.streamserver.serve_forever()
 
-    # def auth():
-            # if secret:
-            #     random_string = base64.encodestring(os.urandom(16)).strip()
-            #     f.write("md5 %s\n" % random_string)
-            #     f.flush()
-            #     # writer.flush()
-            #     line = f.readline()
-
-            #     expected = base64.encodestring(hmac.new(secret, random_string).digest())
-            #     if expected.strip() != line.strip():
-            #         return
-                    # raise RuntimeError("bad auth")
-            # else:
-            #     writer.write("ok\n")
-            #     writer.flush()
-
     def log(self, msg):
         print msg
 
