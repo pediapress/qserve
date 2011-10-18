@@ -137,6 +137,22 @@ class _main(object):
         loops = [(self.report, 20), (self.watchdog, 15), (self.handletimeouts, 1)]
         workers = [gevent.spawn(misc.call_in_loop(sleeptime, fun)) for fun, sleeptime in loops]
 
+        bs = None
+        try:
+            backdoor_port = port_from_str(os.environ.get("qserve_backdoor", ""))
+        except ValueError:
+            pass
+        else:
+            print "starting backdoor on 127.0.0.1:%s" % backdoor_port
+            from gevent import backdoor
+            bs = backdoor.BackdoorServer(
+                ("localhost", backdoor_port),
+                locals=dict(_main=self,
+                            workers=workers,
+                            server=s,
+                            workq=self.db.workq)).start()
+
+
         try:
             s.run_forever()
         except KeyboardInterrupt:
@@ -145,7 +161,8 @@ class _main(object):
             self.savedb()
             for w in workers:
                 w.kill()
-
+            if bs is not None:
+                bs.kill()
 
 def usage():
     print "mw-qserve [-p PORT] [-i INTERFACE] [-d DATADIR]"
