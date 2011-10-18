@@ -244,6 +244,8 @@ class workq(object):
             if channel in watching or not watching:
                 alternatives.append((i, ev))
 
+        heapq.heappush(self.timeoutq, (job.timeout, job))
+
         if alternatives:
             i, ev = random.choice(alternatives)
             del self._waiters[i]
@@ -256,7 +258,6 @@ class workq(object):
             q = self.channel2q[channel] = []
 
         heapq.heappush(q, job)
-        heapq.heappush(self.timeoutq, (job.timeout, job))
 
         return job.jobid
 
