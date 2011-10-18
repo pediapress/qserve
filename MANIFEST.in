@@ -2,6 +2,7 @@ include MANIFEST.in
 include README.rst
 include conftest.py
 include qs/__init__.py
+include qs/__main__.py
 include qs/jobs.py
 include qs/misc.py
 include qs/proc.py
