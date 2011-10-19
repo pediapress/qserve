@@ -39,3 +39,18 @@ def test_run_cmd_execfail():
     assert "failed to exec" in out
     assert "OSError" in out
     assert "Traceback (most recent call last)" in out
+
+
+def test_run_cmd_unicode():
+    lang = os.environ.get("LANG")
+    try:
+        if lang is not None:
+            del os.environ["LANG"]
+
+        st, out = proc.run_cmd([u"echo", "hello", unichr(900)])
+        print (st, out)
+        assert st == 0
+        assert out == "hello " + unichr(900).encode("utf-8") + "\n"
+    finally:
+        if lang is not None:
+            os.environ["LANG"] = lang
