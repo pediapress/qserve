@@ -1,6 +1,6 @@
 
-import gevent
-import greenlet
+import gevent, greenlet
+
 
 def pytest_report_header(config):
     return "gevent %s  --  greenlet %s" % (

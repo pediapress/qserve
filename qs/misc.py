@@ -3,6 +3,7 @@ import sys
 import gevent
 import traceback
 
+
 def safecall(fun, *args, **kwargs):
     try:
         return fun(*args, **kwargs)
@@ -10,6 +11,7 @@ def safecall(fun, *args, **kwargs):
         raise
     except:
         pass
+
 
 class call_in_loop(object):
     def __init__(self, sleep_time, function, *args, **kwargs):

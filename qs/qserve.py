@@ -154,7 +154,6 @@ class _main(object):
                             server=s,
                             workq=self.db.workq)).start()
 
-
         try:
             s.run_forever()
         except KeyboardInterrupt:
@@ -164,6 +163,7 @@ class _main(object):
             workers.kill()
             if bs is not None:
                 bs.kill()
+
 
 def usage():
     print "mw-qserve [-p PORT] [-i INTERFACE] [-d DATADIR]"
