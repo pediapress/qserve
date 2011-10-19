@@ -2,7 +2,7 @@
 
 from __future__ import with_statement
 
-import os, signal, sys, traceback
+import os, signal, traceback
 from gevent import socket, core, event, Timeout, version_info
 
 pid2status = {}
@@ -25,6 +25,11 @@ else:
 
 
 def run_cmd(args, timeout=None):
+    args = list(args)
+    for i, x in enumerate(args):
+        if isinstance(x, unicode):
+            args[i] = x.encode("utf-8")
+
     sp = socket.socketpair()
     pid = os.fork()
     if pid == 0:
