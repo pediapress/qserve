@@ -1,8 +1,6 @@
 #! /usr/bin/env python
-import random
-import heapq
-import time
-import gevent
+
+import time, random, heapq
 from gevent import event
 
 
