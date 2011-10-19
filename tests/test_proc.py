@@ -20,3 +20,9 @@ def test_run_cmd_timeout():
 
 def test_run_cmd_trigger_loopexit():
     proc.run_cmd([sys.executable, "-uc", "import time, os, this; os.close(1); os.close(2); time.sleep(0.2)"])
+
+
+def test_run_cmd_exit_before_close():
+    st, out = proc.run_cmd([sys.executable, "-uc", """import os; import sys; os.spawnl(os.P_NOWAIT, sys.executable, sys.executable, "-c", "import time; time.sleep(0.2); print 'foobar!'")"""])
+    print (st, out)
+    assert (st, out) == (0, 'foobar!\n')
