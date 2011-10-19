@@ -2,7 +2,7 @@
 
 from __future__ import with_statement
 
-import os, signal
+import os, signal, sys, traceback
 from gevent import socket, core, event, Timeout, version_info
 
 pid2status = {}
@@ -35,8 +35,12 @@ def run_cmd(args, timeout=None):
             sp[0].close()
             sp[1].close()
             os.execvp(args[0], args)
+        except:
+            stderr = os.fdopen(2, "w", 0)
+            os.write(2, "failed to exec child process: %r\nPATH=%r" % (args, os.environ.get('PATH')))
+            traceback.print_exc(file=stderr)
         finally:
-            os._exit(10)
+            os._exit(97)
 
     pid2status[pid] = event.AsyncResult()
     sp[1].close()

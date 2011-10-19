@@ -1,6 +1,6 @@
 #! /usr/bin/env py.test
 
-import sys, time
+import sys, time, os
 from qs import proc
 
 
@@ -26,3 +26,16 @@ def test_run_cmd_exit_before_close():
     st, out = proc.run_cmd([sys.executable, "-uc", """import os; import sys; os.spawnl(os.P_NOWAIT, sys.executable, sys.executable, "-c", "import time; time.sleep(0.2); print 'foobar!'")"""])
     print (st, out)
     assert (st, out) == (0, 'foobar!\n')
+
+
+def test_run_cmd_execfail():
+    st, out = proc.run_cmd([sys.executable + "-999"])
+    print "status:", st
+    print "out:", repr(out)
+
+    assert os.WIFEXITED(st)
+    assert os.WEXITSTATUS(st) == 97
+
+    assert "failed to exec" in out
+    assert "OSError" in out
+    assert "Traceback (most recent call last)" in out
