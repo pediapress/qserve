@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 import sys, os, getopt, cPickle
-import gevent
+import gevent, gevent.pool
 from qs import jobs, rpcserver, misc
 
 
@@ -135,7 +135,9 @@ class _main(object):
         print "listening on %s:%s" % (self.interface, self.port)
 
         loops = [(self.report, 20), (self.watchdog, 15), (self.handletimeouts, 1)]
-        workers = [gevent.spawn(misc.call_in_loop(sleeptime, fun)) for fun, sleeptime in loops]
+        workers = gevent.pool.Pool()
+        for fun, sleeptime in loops:
+            workers.spawn(misc.call_in_loop(sleeptime, fun))
 
         bs = None
         try:
@@ -159,8 +161,7 @@ class _main(object):
             print "interrupted"
         finally:
             self.savedb()
-            for w in workers:
-                w.kill()
+            workers.kill()
             if bs is not None:
                 bs.kill()
 
