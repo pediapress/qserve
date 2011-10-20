@@ -3,10 +3,7 @@
 
 def get_version():
     d = {}
-    try:
-        execfile("qs/__init__.py", d, d)
-    except (ImportError, RuntimeError):
-        pass
+    execfile("qs/__init__.py", d, d)
     return d["__version__"]
 
 
