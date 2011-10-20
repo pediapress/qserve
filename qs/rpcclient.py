@@ -17,6 +17,9 @@ class rpcclient(object):
         self.port = port
         self.socket = None
 
+    def _closesocket(self):
+        self.writer = self.reader = self.socket = None
+
     def _getsocket(self):
         s = self.socket = socket.create_connection((self.host, self.port))
         self.reader = s.makefile("r")
@@ -31,9 +34,14 @@ class rpcclient(object):
         d = json.dumps((name, kwargs)) + "\n"
 
         def _send():
-            self.writer.write(d)
-            self.writer.flush()
-            line = self.reader.readline()
+            try:
+                self.writer.write(d)
+                self.writer.flush()
+                line = self.reader.readline()
+            except:
+                self._closesocket()
+                raise
+
             return json.loads(line)
 
         try:
