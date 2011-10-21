@@ -6,13 +6,13 @@ def get_version():
     execfile("qs/__init__.py", d, d)
     return d["__version__"]
 
-
-from distutils.core import setup
-setup(name='qserve',
-      version=get_version(),
-      url="https://github.com/pediapress/qserve",
-      description="job queue server",
-      license="BSD License",
-      maintainer="pediapress.com",
-      maintainer_email="info@pediapress.com",
-      packages=["qs"])
+if __name__ == "__main__":
+    from distutils.core import setup
+    setup(name='qserve',
+          version=get_version(),
+          url="https://github.com/pediapress/qserve",
+          description="job queue server",
+          license="BSD License",
+          maintainer="pediapress.com",
+          maintainer_email="info@pediapress.com",
+          packages=["qs"])

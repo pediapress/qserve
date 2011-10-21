@@ -15,6 +15,7 @@ def main():
     remove("make_manifest.py")
     remove("Makefile")
     remove(".gitignore")
+    remove("make-release")
 
     files.sort()
 
