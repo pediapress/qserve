@@ -18,13 +18,22 @@ def got_signal(*args):
         except OSError:
             return
 
-if version_info[:2] < (1, 0):
-    core.event(core.EV_SIGNAL | core.EV_PERSIST, signal.SIGCHLD, got_signal).add()
-else:
-    signal.signal(signal.SIGCHLD, got_signal)
+_initialized = False
+
+def _init():
+    global _initialized
+    if _initialized:
+        return
+
+    if version_info[:2] < (1, 0):
+        core.event(core.EV_SIGNAL | core.EV_PERSIST, signal.SIGCHLD, got_signal).add()
+    else:
+        signal.signal(signal.SIGCHLD, got_signal)
+    _initialized = True
 
 
 def run_cmd(args, timeout=None):
+    _init()
     args = list(args)
     for i, x in enumerate(args):
         if isinstance(x, unicode):
