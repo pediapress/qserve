@@ -32,7 +32,6 @@ def main():
     # import setup
     # assert setup.get_version() == tag, "version mismatch: %s != %s" % (setup.get_version(), tag)
 
-    print "======> running tox"
     system("tox")
     system("%s setup.py -q sdist" % sys.executable)
     if not dirty:
