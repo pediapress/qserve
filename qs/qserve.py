@@ -153,6 +153,7 @@ class _main(object):
                             workers=workers,
                             server=s,
                             workq=self.db.workq))
+            bs.banner = "Welcome to qserve!"
             bs.pre_start()
             print "starting backdoor on 127.0.0.1:%s" % bs.socket.getsockname()[1]
             bs.start()
