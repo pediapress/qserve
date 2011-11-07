@@ -214,15 +214,14 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
                 pass
 
     def run_with_gevent():
-        import gevent
-        for i in range(numgreenlets):
-            gevent.spawn(start_worker)
+        from qs.misc import call_in_loop
 
-        try:
-            while True:
-                time.sleep(2 ** 26)
-        finally:
-            os._exit(0)
+        import gevent.pool
+        pool = gevent.pool.Pool()
+        for i in range(numgreenlets):
+            pool.spawn(call_in_loop(1.0, start_worker))
+
+        pool.join()
 
     if numgreenlets > 0:
         run_with_gevent()
