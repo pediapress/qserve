@@ -7,7 +7,10 @@ def get_version():
     return d["__version__"]
 
 if __name__ == "__main__":
-    from distutils.core import setup
+    try:
+        from setuptools import setup
+    except ImportError:
+        from distutils.core import setup
     setup(name='qserve',
           version=get_version(),
           url="https://github.com/pediapress/qserve",
