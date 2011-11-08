@@ -238,16 +238,14 @@ class workq(object):
         channel = job.channel
 
         alternatives = []
-        for i, (watching, ev) in enumerate(self._waiters):
+        for watching, ev in self._waiters:
             if channel in watching or not watching:
-                alternatives.append((i, ev))
+                alternatives.append(ev)
 
         heapq.heappush(self.timeoutq, (job.timeout, job))
 
         if alternatives:
-            i, ev = random.choice(alternatives)
-            del self._waiters[i]
-            ev.set(job)
+            random.choice(alternatives).set(job)
             return job.jobid
 
         try:
@@ -289,7 +287,10 @@ class workq(object):
         else:
             ev = event.AsyncResult()
             self._waiters.append((channels, ev))
-            j = ev.get()
+            try:
+                j = ev.get()
+            finally:
+                self._waiters.remove((channels, ev))
 
         return j
 
