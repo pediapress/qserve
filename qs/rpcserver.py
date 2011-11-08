@@ -7,7 +7,7 @@ try:
 except ImportError:
     import json
 
-from gevent import socket, pool, server as gserver, Greenlet, getcurrent
+from gevent import pool, server as gserver, Greenlet, getcurrent, queue, spawn, GreenletExit
 
 
 def key2str(kwargs):
@@ -86,14 +86,25 @@ class server(object):
             clientid = "<%s %s:%s>" % (self.clientcount, addr[0], addr[1])
             current.clientid = clientid
             sockfile = sock.makefile()
+            lineq = queue.Queue()
+
+            def readlines():
+                while 1:
+                    line = sockfile.readline()
+                    lineq.put(line)
+                    if not line:
+                        break
+
+            readgr = spawn(readlines)
+            readgr.link(lambda _: current.kill())
+            current.link(lambda _: readgr.kill())
             handle_request = self.get_request_handler(client=(sock, addr), clientid=clientid)
 
             # self.log("+connect: %s" % (clientid, ))
 
             while 1:
                 current.status = "idle"
-                line = sockfile.readline()
-                # print "got:",  repr(line)
+                line = lineq.get()
                 if not line:
                     break
 
@@ -107,6 +118,8 @@ class server(object):
                 try:
                     d = handle_request(req)
                     response = json.dumps(dict(result=d)) + "\n"
+                except GreenletExit:
+                    raise
                 except Exception, err:
                     response = json.dumps(dict(error=str(err))) + "\n"
                     traceback.print_exc()
@@ -114,6 +127,8 @@ class server(object):
                 current.status = "sending response: %s" % response[:-1]
                 sockfile.write(response)
                 sockfile.flush()
+        except GreenletExit:
+            raise
         except:
             traceback.print_exc()
 
