@@ -17,3 +17,4 @@ ID
 /dist/
 /.tox/
 __pycache__/
+/qserve.egg-info/
