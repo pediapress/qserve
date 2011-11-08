@@ -290,3 +290,13 @@ def test_mark_finished(wq):
 
     mark_finished(error="timeout")
     assert wq._channel2count["render"] == dict(error=1, timeout=1, killed=1, success=1)
+
+
+def test_pop_cleanup_waiters_if_killed(wq, spawn):
+    gr = spawn(wq.pop, [])
+    sleep(0.0)
+    print "before", wq.__dict__
+    assert len(wq._waiters) == 1
+    gr.kill()
+    print "after", wq.__dict__
+    assert len(wq._waiters) == 0
