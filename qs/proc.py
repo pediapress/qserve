@@ -20,6 +20,7 @@ def got_signal(*args):
 
 _initialized = False
 
+
 def _init():
     global _initialized
     if _initialized:
