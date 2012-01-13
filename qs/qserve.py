@@ -154,7 +154,10 @@ class _main(object):
                             server=s,
                             workq=self.db.workq))
             bs.banner = "Welcome to qserve!"
-            bs.pre_start()
+            if hasattr(bs, "pre_start"):
+                bs.pre_start()
+            else:
+                bs.init_socket()  # gevent >= 1.0b1
             print "starting backdoor on 127.0.0.1:%s" % bs.socket.getsockname()[1]
             bs.start()
 

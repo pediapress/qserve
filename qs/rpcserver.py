@@ -59,7 +59,10 @@ class server(object):
         self.get_request_handler = get_request_handler
         self.pool = pool.Pool(1024, ClientGreenlet)
         self.streamserver = gserver.StreamServer((host, port), self.handle_client, spawn=self.pool.spawn)
-        self.streamserver.pre_start()
+        if hasattr(self.streamserver, "pre_start"):
+            self.streamserver.pre_start()
+        else:
+            self.streamserver.init_socket()  # gevent >= 1.0b1
         self.clientcount = 0
 
         if is_allowed is None:
