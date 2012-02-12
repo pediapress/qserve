@@ -4,6 +4,9 @@ from __future__ import with_statement
 
 import os, signal, traceback
 from gevent import socket, core, event, Timeout, version_info
+if not version_info[:2] < (1, 0):
+    from gevent import get_hub
+
 
 pid2status = {}
 
@@ -18,18 +21,22 @@ def got_signal(*args):
         except OSError:
             return
 
+_nochild = True
 _initialized = False
 
 
 def _init():
     global _initialized
+    global _nochild
     if _initialized:
         return
 
     if version_info[:2] < (1, 0):
         core.event(core.EV_SIGNAL | core.EV_PERSIST, signal.SIGCHLD, got_signal).add()
     else:
-        signal.signal(signal.SIGCHLD, got_signal)
+        _nochild = getattr(get_hub().loop, "nochild", True)
+        if _nochild:
+            signal.signal(signal.SIGCHLD, got_signal)
     _initialized = True
 
 
@@ -58,6 +65,15 @@ def run_cmd(args, timeout=None):
             os._exit(97)
 
     pid2status[pid] = event.AsyncResult()
+    if not _nochild:
+
+        def cb():
+            pid2status[pid].set(child_watcher.rstatus)
+            child_watcher.stop()
+
+        child_watcher = get_hub().loop.child(pid)
+        child_watcher.start(cb)
+
     sp[1].close()
 
     chunks = []
