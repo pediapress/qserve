@@ -116,10 +116,10 @@ class _main(object):
 
     def report(self):
         self.db.workq.report()
-        pool = self.server.pool
-        print "= %s clients" % len(pool)
-        for cl in pool:
-            print cl
+        # pool = self.server.pool
+        # print "= %s clients" % len(pool)
+        # for cl in pool:
+        #     print cl
         print
 
     def run(self):
