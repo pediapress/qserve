@@ -93,7 +93,11 @@ class server(object):
 
             def readlines():
                 while 1:
-                    line = sockfile.readline()
+                    try:
+                        line = sockfile.readline()
+                    except Exception as e:
+                        self.log("error reading socket: {}".format(e))
+                        break
                     lineq.put(line)
                     if not line:
                         break
