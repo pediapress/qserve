@@ -1,8 +1,9 @@
 #! /usr/bin/env python
 
 from __future__ import print_function
-import sys
+
 import os
+import sys
 import time
 import traceback
 
@@ -38,7 +39,7 @@ class worker(object):
 
         m = getattr(self, "rpc_" + method, None)
         if m is None:
-            raise RuntimeError("no such method %r" % (method, ))
+            raise RuntimeError("no such method %r" % (method,))
 
         kwargs = job.get("payload") or dict()
         tmp = {}
@@ -53,15 +54,32 @@ class worker(object):
     def qsetinfo(self, info):
         return self.proxy.qsetinfo(jobid=self.jobid, info=info)
 
-    def qadd(self, channel, payload=None, jobid=None, prefix=None, wait=False, timeout=None, ttl=None):
+    def qadd(
+        self, channel, payload=None, jobid=None, prefix=None, wait=False, timeout=None, ttl=None
+    ):
         """call qadd on proxy with the same priority as the current job"""
         if jobid is None and prefix is not None:
             jobid = "%s::%s" % (prefix, channel)
 
-        return self.proxy.qadd(channel=channel, payload=payload, priority=self.priority, jobid=jobid, wait=wait, timeout=timeout, ttl=ttl)
+        return self.proxy.qadd(
+            channel=channel,
+            payload=payload,
+            priority=self.priority,
+            jobid=jobid,
+            wait=wait,
+            timeout=timeout,
+            ttl=ttl,
+        )
 
     def qaddw(self, channel, payload=None, jobid=None, timeout=None):
-        r = self.proxy.qadd(channel=channel, payload=payload, priority=self.priority, jobid=jobid, wait=True, timeout=timeout)
+        r = self.proxy.qadd(
+            channel=channel,
+            payload=payload,
+            priority=self.priority,
+            jobid=jobid,
+            wait=True,
+            timeout=timeout,
+        )
         error = r.get("error")
         if error is not None:
             raise RuntimeError(error)
@@ -69,7 +87,9 @@ class worker(object):
         return r["result"]
 
 
-def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgreenlets=0, argv=None):
+def main(
+    commands, host="localhost", port=None, numthreads=10, numprocs=0, numgreenlets=0, argv=None
+):
     if port is None:
         port = 14311
 
@@ -80,7 +100,9 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
         import getopt
 
         try:
-            opts, args = getopt.getopt(argv, "c:s:", ["host=", "port=", "numthreads=", "numprocs=", "channel=", "skip="])
+            opts, args = getopt.getopt(
+                argv, "c:s:", ["host=", "port=", "numthreads=", "numprocs=", "channel=", "skip="]
+            )
         except getopt.GetoptError as err:
             print(str(err))
             sys.exit(10)
@@ -107,7 +129,7 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
     available_channels = []
     for x in dir(workhandler):
         if x.startswith("rpc_"):
-            available_channels.append(x[len("rpc_"):])
+            available_channels.append(x[len("rpc_") :])
     available_channels.sort()
 
     if not channels:
@@ -122,11 +144,14 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
     assert channels, "no channels"
 
     if numprocs:
+
         def checkparent():
             if os.getppid() == 1:
                 print("parent died. exiting.")
                 os._exit(0)
+
     else:
+
         def checkparent():
             pass
 
@@ -172,6 +197,7 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
 
     def run_with_threads():
         import threading
+
         for i in range(numthreads):
             t = threading.Thread(target=start_worker)
             t.start()
@@ -218,6 +244,7 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
         from qs.misc import call_in_loop
 
         import gevent.pool
+
         pool = gevent.pool.Pool()
         for i in range(numgreenlets):
             pool.spawn(call_in_loop(1.0, start_worker))
@@ -235,6 +262,7 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
 
 
 if __name__ == "__main__":
+
     class commands:
         def rpc_divide(self, a, b):
             print("rpc_divide", (a, b))

@@ -1,8 +1,15 @@
 #! /usr/bin/env python
 
 from __future__ import print_function
-import sys, os, getopt, cPickle
-import gevent, gevent.pool
+
+import cPickle
+import getopt
+import os
+import sys
+
+import gevent
+import gevent.pool
+
 from qs import jobs, rpcserver, misc
 
 
@@ -16,8 +23,17 @@ class qplugin(object):
     def __init__(self, **kw):
         self.running_jobs = {}
 
-    def rpc_qadd(self, channel, payload=None, priority=0, jobid=None, wait=False, timeout=None, ttl=None):
-        jobid = self.workq.push(payload=payload, priority=priority, channel=channel, jobid=jobid, timeout=timeout, ttl=ttl)
+    def rpc_qadd(
+        self, channel, payload=None, priority=0, jobid=None, wait=False, timeout=None, ttl=None
+    ):
+        jobid = self.workq.push(
+            payload=payload,
+            priority=priority,
+            channel=channel,
+            jobid=jobid,
+            timeout=timeout,
+            ttl=ttl,
+        )
         if not wait:
             return jobid
 
@@ -88,7 +104,7 @@ class _main(object):
         datadir = self.datadir
         if datadir is not None:
             if not os.path.isdir(datadir):
-                sys.exit("%r is not a directory" % (datadir, ))
+                sys.exit("%r is not a directory" % (datadir,))
             qpath = os.path.join(datadir, "workq.pickle")
         else:
             qpath = None
@@ -124,7 +140,6 @@ class _main(object):
         print()
 
     def run(self):
-
         class handler(rpcserver.request_handler, qplugin):
             def __init__(self, **kwargs):
                 super(handler, self).__init__(**kwargs)
@@ -132,7 +147,12 @@ class _main(object):
             workq = self.db.workq
             db = self.db
 
-        s = self.server = rpcserver.server(self.port, host=self.interface, get_request_handler=handler, is_allowed=self.is_allowed_ip)
+        s = self.server = rpcserver.server(
+            self.port,
+            host=self.interface,
+            get_request_handler=handler,
+            is_allowed=self.is_allowed_ip,
+        )
         self.port = s.streamserver.socket.getsockname()[1]
         print("listening on %s:%s" % (self.interface, self.port))
 
@@ -148,12 +168,11 @@ class _main(object):
             pass
         else:
             from gevent import backdoor
+
             bs = backdoor.BackdoorServer(
                 ("localhost", backdoor_port),
-                locals=dict(_main=self,
-                            workers=workers,
-                            server=s,
-                            workq=self.db.workq))
+                locals=dict(_main=self, workers=workers, server=s, workq=self.db.workq),
+            )
             bs.banner = "Welcome to qserve!"
             if hasattr(bs, "pre_start"):
                 bs.pre_start()
@@ -181,7 +200,7 @@ def port_from_str(port):
     port = int(port)
     if port < 0 or port > 65535:
         raise ValueError("bad port")
-    return  port
+    return port
 
 
 def parse_options(argv=None):

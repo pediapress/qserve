@@ -1,7 +1,11 @@
 #! /usr/bin/env python
 
 from __future__ import print_function
-import time, random, heapq
+
+import heapq
+import random
+import time
+
 from gevent import event
 
 
@@ -171,7 +175,6 @@ class workq(object):
             print("watchdog: dropped %s jobs, marked %s jobs with a deadline" % (dcount, mcount))
 
     def getstats(self):
-
         def count_not_done(lst):
             res = 0
             for x in lst:
@@ -179,14 +182,16 @@ class workq(object):
                     res += 1
             return res
 
-        stats = dict(count=self.count,
-                     numjobs=len(self.id2job),
-                     channel2stat=self._channel2count,
-                     busy=dict([(c, count_not_done(todo)) for c, todo in self.channel2q.items()]))
+        stats = dict(
+            count=self.count,
+            numjobs=len(self.id2job),
+            channel2stat=self._channel2count,
+            busy=dict([(c, count_not_done(todo)) for c, todo in self.channel2q.items()]),
+        )
         return stats
 
     def report(self):
-        print("=== report %s ===" % (time.ctime(), ))
+        print("=== report %s ===" % (time.ctime(),))
         print("have %s jobs" % len(self.id2job))
         print("count:", self.count)
 
@@ -263,7 +268,16 @@ class workq(object):
             if jobid in self.id2job and self.id2job[jobid].error != "killed":
                 return jobid
 
-        return self.pushjob(job(payload=payload, priority=priority, channel=channel, jobid=jobid, timeout=timeout, ttl=ttl))
+        return self.pushjob(
+            job(
+                payload=payload,
+                priority=priority,
+                channel=channel,
+                jobid=jobid,
+                timeout=timeout,
+                ttl=ttl,
+            )
+        )
 
     def pop(self, channels):
         if not channels:

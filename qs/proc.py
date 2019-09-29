@@ -2,8 +2,12 @@
 
 from __future__ import with_statement
 
-import os, signal, traceback
+import os
+import signal
+import traceback
+
 from gevent import socket, core, event, Timeout, version_info
+
 if not version_info[:2] < (1, 0):
     from gevent import get_hub
 
@@ -20,6 +24,7 @@ def got_signal(*args):
             pid2status[pid].set(st)
         except OSError:
             return
+
 
 _nochild = True
 _initialized = False
@@ -59,7 +64,9 @@ def run_cmd(args, timeout=None):
             os.execvp(args[0], args)
         except:
             stderr = os.fdopen(2, "w", 0)
-            os.write(2, "failed to exec child process: %r\nPATH=%r" % (args, os.environ.get('PATH')))
+            os.write(
+                2, "failed to exec child process: %r\nPATH=%r" % (args, os.environ.get("PATH"))
+            )
             traceback.print_exc(file=stderr)
         finally:
             os._exit(97)

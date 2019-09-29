@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 from __future__ import print_function
+
 import traceback
 
 try:
@@ -27,7 +28,7 @@ class dispatcher(object):
         cmdname = str("rpc_" + name)
         m = getattr(self, cmdname, None)
         if not m:
-            raise RuntimeError("no such method: %r" % (name, ))
+            raise RuntimeError("no such method: %r" % (name,))
         return m(**kwargs)
 
 
@@ -59,7 +60,9 @@ class server(object):
         self.secret = secret
         self.get_request_handler = get_request_handler
         self.pool = pool.Pool(1024, ClientGreenlet)
-        self.streamserver = gserver.StreamServer((host, port), self.handle_client, spawn=self.pool.spawn)
+        self.streamserver = gserver.StreamServer(
+            (host, port), self.handle_client, spawn=self.pool.spawn
+        )
         if hasattr(self.streamserver, "pre_start"):
             self.streamserver.pre_start()
         else:
@@ -79,7 +82,7 @@ class server(object):
 
     def handle_client(self, sock, addr):
         if not self.is_allowed(addr[0]):
-            self.log("+DENY %r" % (addr, ))
+            self.log("+DENY %r" % (addr,))
             sock.close()
             return
 

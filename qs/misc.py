@@ -1,7 +1,7 @@
-
 import sys
-import gevent
 import traceback
+
+import gevent
 
 
 def safecall(fun, *args, **kwargs):
@@ -21,7 +21,12 @@ class call_in_loop(object):
         self.kwargs = kwargs
 
     def __repr__(self):
-        return "<call_in_loop %s %s %r %r>" % (self.sleep_time, self.function.__name__, self.args, self.kwargs)
+        return "<call_in_loop %s %s %r %r>" % (
+            self.sleep_time,
+            self.function.__name__,
+            self.args,
+            self.kwargs,
+        )
 
     def iterate(self):
         try:
