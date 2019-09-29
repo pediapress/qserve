@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+from __future__ import print_function
 import sys, os, getopt, cPickle
 import gevent, gevent.pool
 from qs import jobs, rpcserver, misc
@@ -34,9 +35,9 @@ class qplugin(object):
 
     def rpc_qfinish(self, jobid, result=None, error=None, traceback=None):
         if error:
-            print "error finish: %s: %r" % (jobid, error)
+            print("error finish: %s: %r" % (jobid, error))
         else:
-            print "finish: %s: %r" % (jobid, result)
+            print("finish: %s: %r" % (jobid, result))
         self.workq.finishjob(jobid, result=result, error=error)
         if jobid in self.running_jobs:
             del self.running_jobs[jobid]
@@ -93,16 +94,16 @@ class _main(object):
             qpath = None
 
         if qpath and os.path.exists(qpath):
-            print "loading", qpath
+            print("loading", qpath)
             self.db = cPickle.load(open(qpath))
-            print "loaded", len(self.db.workq.id2job), "jobs"
+            print("loaded", len(self.db.workq.id2job), "jobs")
         else:
             self.db = db()
         self.qpath = qpath
 
     def savedb(self):
         if self.qpath:
-            print "saving", self.qpath
+            print("saving", self.qpath)
             cPickle.dump(self.db, open(self.qpath, "w"), 2)
 
     def is_allowed_ip(self, ip):
@@ -120,7 +121,7 @@ class _main(object):
         # print "= %s clients" % len(pool)
         # for cl in pool:
         #     print cl
-        print
+        print()
 
     def run(self):
 
@@ -133,7 +134,7 @@ class _main(object):
 
         s = self.server = rpcserver.server(self.port, host=self.interface, get_request_handler=handler, is_allowed=self.is_allowed_ip)
         self.port = s.streamserver.socket.getsockname()[1]
-        print "listening on %s:%s" % (self.interface, self.port)
+        print("listening on %s:%s" % (self.interface, self.port))
 
         loops = [(self.report, 20), (self.watchdog, 15), (self.handletimeouts, 1)]
         workers = gevent.pool.Pool()
@@ -158,13 +159,13 @@ class _main(object):
                 bs.pre_start()
             else:
                 bs.init_socket()  # gevent >= 1.0b1
-            print "starting backdoor on 127.0.0.1:%s" % bs.socket.getsockname()[1]
+            print("starting backdoor on 127.0.0.1:%s" % bs.socket.getsockname()[1])
             bs.start()
 
         try:
             s.run_forever()
         except KeyboardInterrupt:
-            print "interrupted"
+            print("interrupted")
         finally:
             self.savedb()
             workers.kill()
@@ -173,7 +174,7 @@ class _main(object):
 
 
 def usage():
-    print "mw-qserve [-p PORT] [-i INTERFACE] [-d DATADIR]"
+    print("mw-qserve [-p PORT] [-i INTERFACE] [-d DATADIR]")
 
 
 def port_from_str(port):
@@ -189,12 +190,12 @@ def parse_options(argv=None):
 
     try:
         opts, args = getopt.getopt(argv, "a:d:p:i:h", ["help", "port=", "interface="])
-    except getopt.GetoptError, err:
-        print str(err)
+    except getopt.GetoptError as err:
+        print(str(err))
         sys.exit(10)
 
     if args:
-        print "too many arguments"
+        print("too many arguments")
         sys.exit(10)
 
     port = 14311
@@ -207,7 +208,7 @@ def parse_options(argv=None):
             try:
                 port = port_from_str(a)
             except ValueError:
-                print "expected positive integer as argument to %s" % o
+                print("expected positive integer as argument to %s" % o)
                 sys.exit(10)
         elif o in ("-i", "--interface"):
             interface = a

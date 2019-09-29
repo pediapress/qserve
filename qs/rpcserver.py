@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+from __future__ import print_function
 import traceback
 
 try:
@@ -74,7 +75,7 @@ class server(object):
         self.streamserver.serve_forever()
 
     def log(self, msg):
-        print msg
+        print(msg)
 
     def handle_client(self, sock, addr):
         if not self.is_allowed(addr[0]):
@@ -117,7 +118,7 @@ class server(object):
 
                 try:
                     req = json.loads(line)
-                except ValueError, err:
+                except ValueError as err:
                     self.log("+protocol error %s: %s" % (clientid, err))
                     break
 
@@ -127,7 +128,7 @@ class server(object):
                     response = json.dumps(dict(result=d)) + "\n"
                 except GreenletExit:
                     raise
-                except Exception, err:
+                except Exception as err:
                     response = json.dumps(dict(error=str(err))) + "\n"
                     traceback.print_exc()
 

@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+from __future__ import print_function
 import sys
 import os
 import time
@@ -80,8 +81,8 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
 
         try:
             opts, args = getopt.getopt(argv, "c:s:", ["host=", "port=", "numthreads=", "numprocs=", "channel=", "skip="])
-        except getopt.GetoptError, err:
-            print str(err)
+        except getopt.GetoptError as err:
+            print(str(err))
             sys.exit(10)
 
         for o, a in opts:
@@ -123,7 +124,7 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
     if numprocs:
         def checkparent():
             if os.getppid() == 1:
-                print "parent died. exiting."
+                print("parent died. exiting.")
                 os._exit(0)
     else:
         def checkparent():
@@ -136,9 +137,9 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
             try:
                 job = qs.qpull(channels=channels)
                 break
-            except Exception, err:
+            except Exception as err:
                 checkparent()
-                print "Error while calling pulljob:", str(err)
+                print("Error while calling pulljob:", str(err))
                 time.sleep(sleeptime)
                 checkparent()
                 if sleeptime < 60:
@@ -148,8 +149,8 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
         # print "got job:", job
         try:
             result = workhandler(qs).dispatch(job)
-        except Exception, err:
-            print "error:", err
+        except Exception as err:
+            print("error:", err)
             try:
                 qs.qfinish(jobid=job["jobid"], error=shorterrmsg())
                 traceback.print_exc()
@@ -167,7 +168,7 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
         while 1:
             handle_one_job(qs)
 
-    print "pulling jobs from", "%s:%s" % (host, port), "for", ", ".join(channels)
+    print("pulling jobs from", "%s:%s" % (host, port), "for", ", ".join(channels))
 
     def run_with_threads():
         import threading
@@ -189,7 +190,7 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
                 try:
                     pid = os.fork()
                 except:
-                    print "failed to fork child"
+                    print("failed to fork child")
                     time.sleep(1)
                     continue
 
@@ -236,7 +237,7 @@ def main(commands, host="localhost", port=None, numthreads=10, numprocs=0, numgr
 if __name__ == "__main__":
     class commands:
         def rpc_divide(self, a, b):
-            print "rpc_divide", (a, b)
+            print("rpc_divide", (a, b))
             return a / b
 
     main(commands, numprocs=2)

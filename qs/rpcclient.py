@@ -67,6 +67,6 @@ class serverproxy(object):
     def __getattr__(self, name):
         def call(**kwargs):
             return self._rpcclient.send(name, **kwargs)
-        call.func_name = name
+        call.__name__ = name
         self.__dict__[name] = call
         return call

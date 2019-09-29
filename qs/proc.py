@@ -95,7 +95,7 @@ def run_cmd(args, timeout=None):
         del pid2status[pid]
 
         return st, "".join(chunks)
-    except Timeout, t:
+    except Timeout as t:
         if t is not timeout:
             raise
     finally:
