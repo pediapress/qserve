@@ -3,20 +3,24 @@
 import sys, time, cPickle, StringIO
 from qs import jobs
 from gevent import sleep, pool
+import pytest
 
 
-def pytest_funcarg__wq(request):
+@pytest.fixture
+def wq(request):
     return jobs.workq()
 
 
-def pytest_funcarg__spawn(request):
+@pytest.fixture
+def spawn(request):
     p = pool.Pool()
     request.addfinalizer(p.kill)
     return p.spawn
 
 
-def pytest_funcarg__faketime(request):
-    monkeypatch = request.getfuncargvalue("monkeypatch")
+@pytest.fixture
+def faketime(request):
+    monkeypatch = request.getfixturevalue("monkeypatch")
 
     class faketime(object):
         def __init__(self):

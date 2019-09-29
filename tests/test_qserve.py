@@ -10,7 +10,8 @@ def defopts(**kw):
     return res
 
 
-def pytest_funcarg__main(request):
+@pytest.fixture
+def main(request):
     return qserve._main(0, "0.0.0.0", None, allowed_ips=set())
 
 # -- tests
