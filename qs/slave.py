@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+from __future__ import division
 from __future__ import print_function
 
 import os
@@ -7,10 +8,15 @@ import sys
 import time
 import traceback
 
-from qs.rpcclient import serverproxy
+from builtins import object
+from builtins import range
+from builtins import str
+from past.utils import old_div
+
+from qs.rpcclient import ServerProxy
 
 
-def shorterrmsg():
+def short_err_msg():
     etype, val, tb = sys.exc_info()
     msg = []
     a = msg.append
@@ -25,7 +31,7 @@ def shorterrmsg():
     return "".join(msg)
 
 
-class worker(object):
+class Worker(object):
     def __init__(self, proxy):
         self.proxy = proxy
 
@@ -43,25 +49,25 @@ class worker(object):
 
         kwargs = job.get("payload") or dict()
         tmp = {}
-        for k, v in kwargs.items():
-            if isinstance(k, unicode):
+        for k, v in list(kwargs.items()):
+            if isinstance(k, str):
                 tmp[str(k)] = v
             else:
                 tmp[k] = v
 
         return m(**tmp)
 
-    def qsetinfo(self, info):
-        return self.proxy.qsetinfo(jobid=self.jobid, info=info)
+    def q_set_info(self, info):
+        return self.proxy.q_set_info(jobid=self.jobid, info=info)
 
-    def qadd(
+    def q_add(
         self, channel, payload=None, jobid=None, prefix=None, wait=False, timeout=None, ttl=None
     ):
-        """call qadd on proxy with the same priority as the current job"""
+        """call q_add on proxy with the same priority as the current job"""
         if jobid is None and prefix is not None:
             jobid = "%s::%s" % (prefix, channel)
 
-        return self.proxy.qadd(
+        return self.proxy.q_add(
             channel=channel,
             payload=payload,
             priority=self.priority,
@@ -71,8 +77,8 @@ class worker(object):
             ttl=ttl,
         )
 
-    def qaddw(self, channel, payload=None, jobid=None, timeout=None):
-        r = self.proxy.qadd(
+    def q_add_w(self, channel, payload=None, jobid=None, timeout=None):
+        r = self.proxy.q_add(
             channel=channel,
             payload=payload,
             priority=self.priority,
@@ -88,7 +94,7 @@ class worker(object):
 
 
 def main(
-    commands, host="localhost", port=None, numthreads=10, numprocs=0, numgreenlets=0, argv=None
+    commands, host="localhost", port=None, numthreads=10, num_procs=0, numgreenlets=0, argv=None
 ):
     if port is None:
         port = 14311
@@ -114,20 +120,20 @@ def main(
                 port = int(a)
             if o == "--numthreads":
                 numthreads = int(a)
-                numprocs = 0
+                num_procs = 0
             if o == "--numprocs":
-                numprocs = int(a)
+                num_procs = int(a)
                 numthreads = 0
             if o == "-c" or o == "--channel":
                 channels.append(a)
             if o == "-s" or o == "--skip":
                 skip_channels.append(a)
 
-    class workhandler(worker, commands):
+    class WorkHandler(Worker, commands):
         pass
 
     available_channels = []
-    for x in dir(workhandler):
+    for x in dir(WorkHandler):
         if x.startswith("rpc_"):
             available_channels.append(x[len("rpc_") :])
     available_channels.sort()
@@ -143,16 +149,16 @@ def main(
 
     assert channels, "no channels"
 
-    if numprocs:
+    if num_procs:
 
-        def checkparent():
+        def check_parent():
             if os.getppid() == 1:
                 print("parent died. exiting.")
                 os._exit(0)
 
     else:
 
-        def checkparent():
+        def check_parent():
             pass
 
     def handle_one_job(qs):
@@ -163,21 +169,21 @@ def main(
                 job = qs.qpull(channels=channels)
                 break
             except Exception as err:
-                checkparent()
+                check_parent()
                 print("Error while calling pulljob:", str(err))
                 time.sleep(sleeptime)
-                checkparent()
+                check_parent()
                 if sleeptime < 60:
                     sleeptime *= 2
 
-        checkparent()
+        check_parent()
         # print "got job:", job
         try:
-            result = workhandler(qs).dispatch(job)
+            result = WorkHandler(qs).dispatch(job)
         except Exception as err:
             print("error:", err)
             try:
-                qs.qfinish(jobid=job["jobid"], error=shorterrmsg())
+                qs.qfinish(jobid=job["jobid"], error=short_err_msg())
                 traceback.print_exc()
             except:
                 pass
@@ -189,7 +195,7 @@ def main(
             pass
 
     def start_worker():
-        qs = serverproxy(host=host, port=port)
+        qs = ServerProxy(host=host, port=port)
         while 1:
             handle_one_job(qs)
 
@@ -212,7 +218,7 @@ def main(
         children = set()
 
         while 1:
-            while len(children) < numprocs:
+            while len(children) < num_procs:
                 try:
                     pid = os.fork()
                 except:
@@ -222,7 +228,7 @@ def main(
 
                 if pid == 0:
                     try:
-                        qs = serverproxy(host=host, port=port)
+                        qs = ServerProxy(host=host, port=port)
                         handle_one_job(qs)
                     finally:
                         os._exit(0)
@@ -241,19 +247,19 @@ def main(
                 pass
 
     def run_with_gevent():
-        from qs.misc import call_in_loop
+        from qs.misc import CallInLoop
 
         import gevent.pool
 
         pool = gevent.pool.Pool()
         for i in range(numgreenlets):
-            pool.spawn(call_in_loop(1.0, start_worker))
+            pool.spawn(CallInLoop(1.0, start_worker))
 
         pool.join()
 
     if numgreenlets > 0:
         run_with_gevent()
-    elif numprocs > 0:
+    elif num_procs > 0:
         run_with_procs()
     elif numthreads > 0:
         run_with_threads()
@@ -263,9 +269,9 @@ def main(
 
 if __name__ == "__main__":
 
-    class commands:
+    class Commands(object):
         def rpc_divide(self, a, b):
             print("rpc_divide", (a, b))
-            return a / b
+            return old_div(a, b)
 
-    main(commands, numprocs=2)
+    main(Commands, num_procs=2)

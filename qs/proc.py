@@ -26,21 +26,21 @@ def got_signal(*args):
             return
 
 
-_nochild = True
+_no_child = True
 _initialized = False
 
 
 def _init():
     global _initialized
-    global _nochild
+    global _no_child
     if _initialized:
         return
 
     if version_info[:2] < (1, 0):
         core.event(core.EV_SIGNAL | core.EV_PERSIST, signal.SIGCHLD, got_signal).add()
     else:
-        _nochild = getattr(get_hub().loop, "nochild", True)
-        if _nochild:
+        _no_child = getattr(get_hub().loop, "nochild", True)
+        if _no_child:
             signal.signal(signal.SIGCHLD, got_signal)
     _initialized = True
 
@@ -49,7 +49,7 @@ def run_cmd(args, timeout=None):
     _init()
     args = list(args)
     for i, x in enumerate(args):
-        if isinstance(x, unicode):
+        if isinstance(x, str):
             args[i] = x.encode("utf-8")
 
     sp = socket.socketpair()
@@ -72,7 +72,7 @@ def run_cmd(args, timeout=None):
             os._exit(97)
 
     pid2status[pid] = event.AsyncResult()
-    if not _nochild:
+    if not _no_child:
 
         def cb():
             pid2status[pid].set(child_watcher.rstatus)

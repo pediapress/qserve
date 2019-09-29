@@ -1,18 +1,20 @@
 #! /usr/bin/env py.test
 
 import pytest
+
 from qs import qserve
 
 
 def defopts(**kw):
-    res = {'interface': '0.0.0.0', 'datadir': None, 'allowed_ips': set([]), 'port': 14311}
+    res = {"interface": "0.0.0.0", "datadir": None, "allowed_ips": set([]), "port": 14311}
     res.update(kw)
     return res
 
 
 @pytest.fixture
 def main(request):
-    return qserve._main(0, "0.0.0.0", None, allowed_ips=set())
+    return qserve.Main(0, "0.0.0.0", None, allowed_ips=set())
+
 
 # -- tests
 

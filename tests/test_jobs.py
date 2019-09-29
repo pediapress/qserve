@@ -1,9 +1,21 @@
 #! /usr/bin/env py.test
+from __future__ import print_function
 
-import sys, time, cPickle, StringIO
-from qs import jobs
-from gevent import sleep, pool
+import io
+import pickle
+import sys
+import time
+
 import pytest
+from builtins import chr
+from builtins import object
+from builtins import range
+from future import standard_library
+from gevent import sleep, pool
+
+from qs import jobs
+
+standard_library.install_aliases()
 
 
 @pytest.fixture
@@ -42,10 +54,11 @@ def faketime(request):
 
 
 def loaddump(obj):
-    return cPickle.loads(cPickle.dumps(obj))
+    return pickle.loads(pickle.dumps(obj))
 
 
 # -- tests
+
 
 def test_job_defaults():
     now = time.time()
@@ -56,7 +69,7 @@ def test_job_defaults():
 
 
 def test_job_repr_unicode():
-    r = repr(jobs.job("render", jobid=unichr(256)))
+    r = repr(jobs.job("render", jobid=chr(256)))
     assert isinstance(r, str)
 
 
@@ -92,15 +105,15 @@ def test_job_unpickle_event():
 
 
 def test_job_json():
-    jobs.job("render", jobid=unichr(256))._json()
+    jobs.job("render", jobid=chr(256))._json()
 
 
 def test_workq_pickle(wq):
     wq.pushjob(jobs.job("render1"))
     wq.pushjob(jobs.job("render2"))
     w2 = loaddump(wq)
-    print wq.__dict__
-    print w2.__dict__
+    print(wq.__dict__)
+    print(w2.__dict__)
     assert wq.__dict__ == w2.__dict__
 
 
@@ -112,7 +125,7 @@ def test_pushjob_automatic_jobid(wq):
 
 
 def test_pushjob_no_automatic_jobid(wq):
-    for jobid in ["", "123", unichr(255), 0]:
+    for jobid in ["", "123", chr(255), 0]:
         j = jobs.job("render", payload="hello", jobid=jobid)
         jid = wq.pushjob(j)
         assert (jid, j.jobid) == (jobid, jobid)
@@ -142,21 +155,25 @@ def test_pushjob_pop(wq, spawn):
 def test_stats(wq):
     joblst = [wq.push("render", payload=i) for i in range(10)]
     stats = wq.getstats()
-    print "stats before", stats
-    assert stats == {'count': 10, 'busy': {'render': 10}, 'channel2stat': {}, 'numjobs': 10}
+    print("stats before", stats)
+    assert stats == {"count": 10, "busy": {"render": 10}, "channel2stat": {}, "numjobs": 10}
 
     wq.killjobs(joblst[1:])
 
     stats = wq.getstats()
-    print "stats after", stats
-    assert stats == {'count': 10, 'busy': {'render': 1}, 'channel2stat': {'render': {'success': 0, 'killed': 9, 'timeout': 0, 'error': 0}}, 'numjobs': 10}
-    print wq.waitjobs(joblst[1:])
+    print("stats after", stats)
+    assert stats == {
+        "count": 10,
+        "busy": {"render": 1},
+        "channel2stat": {"render": {"success": 0, "killed": 9, "timeout": 0, "error": 0}},
+        "numjobs": 10,
+    }
+    print(wq.waitjobs(joblst[1:]))
 
 
 def test_report(wq, monkeypatch):
-
     def get_report():
-        stdout = StringIO.StringIO()
+        stdout = io.BytesIO()
         monkeypatch.setattr(sys, "stdout", stdout)
         wq.report()
         monkeypatch.undo()
@@ -169,7 +186,7 @@ def test_report(wq, monkeypatch):
     wq.killjobs(joblst[2:])
 
     out = get_report()
-    print "--- OUTPUT ---\n", out, "\n------------"
+    print("--- OUTPUT ---\n", out, "\n------------")
 
     assert "render 10" not in out
     assert "render 2\n" in out
@@ -187,16 +204,16 @@ def test_pop_does_preen(wq):
     for j in jlist[:-1]:
         wq._mark_finished(j, killed=True)
 
-    print wq.__dict__
+    print(wq.__dict__)
     j = wq.pop(["render"])
-    print j, jlist
+    print(j, jlist)
     assert j is jlist[-1]
 
 
 def test_pop_new_channel(wq, spawn):
     wq.push("foo")
     wq.pop([])  # wq.channel2q == {'foo': []} now
-    print wq.__dict__
+    print(wq.__dict__)
 
     gr = spawn(wq.pop, [])
     sleep(0)
@@ -299,8 +316,8 @@ def test_mark_finished(wq):
 def test_pop_cleanup_waiters_if_killed(wq, spawn):
     gr = spawn(wq.pop, [])
     sleep(0.0)
-    print "before", wq.__dict__
+    print("before", wq.__dict__)
     assert len(wq._waiters) == 1
     gr.kill()
-    print "after", wq.__dict__
+    print("after", wq.__dict__)
     assert len(wq._waiters) == 0

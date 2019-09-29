@@ -2,7 +2,11 @@
 
 from __future__ import print_function
 
-import cPickle
+from future import standard_library
+
+from builtins import str
+from builtins import object
+import pickle
 import getopt
 import os
 import sys
@@ -11,6 +15,7 @@ import gevent
 import gevent.pool
 
 from qs import jobs, rpcserver, misc
+standard_library.install_aliases()
 
 
 class db(object):
@@ -19,25 +24,25 @@ class db(object):
         self.workq = jobs.workq()
 
 
-class qplugin(object):
+class QPlugin(object):
     def __init__(self, **kw):
         self.running_jobs = {}
 
     def rpc_qadd(
-        self, channel, payload=None, priority=0, jobid=None, wait=False, timeout=None, ttl=None
+        self, channel, payload=None, priority=0, job_id=None, wait=False, timeout=None, ttl=None
     ):
-        jobid = self.workq.push(
+        job_id = self.workq.push(
             payload=payload,
             priority=priority,
             channel=channel,
-            jobid=jobid,
+            jobid=job_id,
             timeout=timeout,
             ttl=ttl,
         )
         if not wait:
-            return jobid
+            return job_id
 
-        res = self.workq.waitjobs([jobid])[0]
+        res = self.workq.waitjobs([job_id])[0]
         return res._json()
 
     def rpc_qpull(self, channels=None):
@@ -87,31 +92,31 @@ class qplugin(object):
         return self.workq.getstats()
 
     def shutdown(self):
-        for j in self.running_jobs.values():
+        for j in list(self.running_jobs.values()):
             # print "reschedule", j
             self.workq.pushjob(j)
 
 
-class _main(object):
-    def __init__(self, port, interface, datadir, allowed_ips):
+class Main(object):
+    def __init__(self, port, interface, data_dir, allowed_ips):
         self.port = port
         self.interface = interface
-        self.datadir = datadir
+        self.data_dir = data_dir
         self.allowed_ips = allowed_ips
         self.loaddb()
 
     def loaddb(self):
-        datadir = self.datadir
-        if datadir is not None:
-            if not os.path.isdir(datadir):
-                sys.exit("%r is not a directory" % (datadir,))
-            qpath = os.path.join(datadir, "workq.pickle")
+        data_dir = self.data_dir
+        if data_dir is not None:
+            if not os.path.isdir(data_dir):
+                sys.exit("%r is not a directory" % (data_dir,))
+            qpath = os.path.join(data_dir, "workq.pickle")
         else:
             qpath = None
 
         if qpath and os.path.exists(qpath):
             print("loading", qpath)
-            self.db = cPickle.load(open(qpath))
+            self.db = pickle.load(open(qpath))
             print("loaded", len(self.db.workq.id2job), "jobs")
         else:
             self.db = db()
@@ -120,7 +125,7 @@ class _main(object):
     def savedb(self):
         if self.qpath:
             print("saving", self.qpath)
-            cPickle.dump(self.db, open(self.qpath, "w"), 2)
+            pickle.dump(self.db, open(self.qpath, "w"), 2)
 
     def is_allowed_ip(self, ip):
         return not self.allowed_ips or ip in self.allowed_ips
@@ -140,26 +145,26 @@ class _main(object):
         print()
 
     def run(self):
-        class handler(rpcserver.request_handler, qplugin):
+        class Handler(rpcserver.RequestHandler, QPlugin):
             def __init__(self, **kwargs):
-                super(handler, self).__init__(**kwargs)
+                super(Handler, self).__init__(**kwargs)
 
             workq = self.db.workq
             db = self.db
 
-        s = self.server = rpcserver.server(
+        s = self.server = rpcserver.Server(
             self.port,
             host=self.interface,
-            get_request_handler=handler,
+            get_request_handler=Handler,
             is_allowed=self.is_allowed_ip,
         )
-        self.port = s.streamserver.socket.getsockname()[1]
+        self.port = s.stream_server.socket.getsockname()[1]
         print("listening on %s:%s" % (self.interface, self.port))
 
         loops = [(self.report, 20), (self.watchdog, 15), (self.handletimeouts, 1)]
         workers = gevent.pool.Pool()
         for fun, sleeptime in loops:
-            workers.spawn(misc.call_in_loop(sleeptime, fun))
+            workers.spawn(misc.CallInLoop(sleeptime, fun))
 
         bs = None
         try:
@@ -243,7 +248,7 @@ def parse_options(argv=None):
 
 
 def main(argv=None):
-    _main(**parse_options(argv=argv)).run()
+    Main(**parse_options(argv=argv)).run()
 
 
 if __name__ == "__main__":

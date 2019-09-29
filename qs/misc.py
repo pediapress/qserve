@@ -1,10 +1,11 @@
+from builtins import object
 import sys
 import traceback
 
 import gevent
 
 
-def safecall(fun, *args, **kwargs):
+def safe_call(fun, *args, **kwargs):
     try:
         return fun(*args, **kwargs)
     except gevent.GreenletExit:
@@ -13,7 +14,7 @@ def safecall(fun, *args, **kwargs):
         pass
 
 
-class call_in_loop(object):
+class CallInLoop(object):
     def __init__(self, sleep_time, function, *args, **kwargs):
         self.sleep_time = sleep_time
         self.function = function
@@ -34,8 +35,8 @@ class call_in_loop(object):
         except gevent.GreenletExit:
             raise
         except:
-            safecall(self.report_error)
-        safecall(gevent.sleep, self.sleep_time)
+            safe_call(self.report_error)
+        safe_call(gevent.sleep, self.sleep_time)
 
     def __call__(self):
         while 1:

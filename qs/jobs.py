@@ -6,7 +6,11 @@ import heapq
 import random
 import time
 
+from builtins import hex
+from builtins import object
 from gevent import event
+from past.builtins import basestring
+from past.builtins import cmp
 
 
 class job(object):
@@ -67,7 +71,7 @@ class workq(object):
         self._channel2count = {}
 
     def __getstate__(self):
-        return dict(count=self.count, jobs=self.id2job.values())
+        return dict(count=self.count, jobs=list(self.id2job.values()))
 
     def __setstate__(self, state):
         self.__init__()
@@ -96,7 +100,7 @@ class workq(object):
         return before - len(q)
 
     def _preenall(self):
-        for k, v in self.channel2q.items():
+        for k, v in list(self.channel2q.items()):
             c = self._preenjobq(v)
             if c:
                 print("preen:", k, c)
@@ -105,7 +109,7 @@ class workq(object):
         if job.done:
             return
 
-        for k, v in kw.items():
+        for k, v in list(kw.items()):
             setattr(job, k, v)
         job.done = True
         job.finish_event.set()
@@ -163,7 +167,7 @@ class workq(object):
 
         dcount = 0
         mcount = 0
-        for jid, job in self.id2job.items():
+        for jid, job in list(self.id2job.items()):
             if job.deadline and job.deadline < now:
                 del self.id2job[jid]
                 dcount += 1
@@ -186,7 +190,7 @@ class workq(object):
             count=self.count,
             numjobs=len(self.id2job),
             channel2stat=self._channel2count,
-            busy=dict([(c, count_not_done(todo)) for c, todo in self.channel2q.items()]),
+            busy=dict([(c, count_not_done(todo)) for c, todo in list(self.channel2q.items())]),
         )
         return stats
 
@@ -196,7 +200,7 @@ class workq(object):
         print("count:", self.count)
 
         stats = self.getstats()
-        busy = stats["busy"].items()
+        busy = list(stats["busy"].items())
         busy.sort()
 
         if busy:
@@ -281,7 +285,7 @@ class workq(object):
 
     def pop(self, channels):
         if not channels:
-            try_channels = self.channel2q.keys()
+            try_channels = list(self.channel2q.keys())
         else:
             try_channels = channels
 
