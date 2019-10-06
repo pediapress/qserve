@@ -10,9 +10,10 @@ from builtins import hex
 from builtins import object
 from gevent import event
 from past.builtins import basestring
-from past.builtins import cmp
+from functools import total_ordering
 
 
+@total_ordering
 class job(object):
     serial = None
     jobid = None
@@ -40,8 +41,14 @@ class job(object):
     def __repr__(self):
         return "<job %r at %s>" % (self.jobid, hex(id(self)))
 
-    def __cmp__(self, other):
-        return cmp((self.priority, self.serial), (other.priority, other.serial))
+    def __eq__(self, other):
+        return (self.priority, self.serial) == (other.priority, other.serial)
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __le__(self, other):
+        return (self.priority, self.serial) < (other.priority, other.serial)
 
     def __getstate__(self):
         d = self.__dict__.copy()

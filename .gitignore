@@ -18,3 +18,4 @@ ID
 /.tox/
 __pycache__/
 /qserve.egg-info/
+.python-version

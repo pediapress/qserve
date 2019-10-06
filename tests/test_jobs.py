@@ -58,8 +58,6 @@ def loaddump(obj):
 
 
 # -- tests
-
-
 def test_job_defaults():
     now = time.time()
     j1 = jobs.job("render")
@@ -173,7 +171,10 @@ def test_stats(wq):
 
 def test_report(wq, monkeypatch):
     def get_report():
-        stdout = io.BytesIO()
+        if int(sys.version[0]) < 3:
+            stdout = io.BytesIO()
+        else:
+            stdout = io.StringIO()
         monkeypatch.setattr(sys, "stdout", stdout)
         wq.report()
         monkeypatch.undo()
