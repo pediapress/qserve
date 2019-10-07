@@ -2,19 +2,19 @@
 
 from __future__ import print_function
 
-from future import standard_library
-
-from builtins import str
-from builtins import object
-import pickle
 import getopt
 import os
+import pickle
 import sys
+from builtins import object
+from builtins import str
 
 import gevent
 import gevent.pool
+from future import standard_library
 
 from qs import jobs, rpcserver, misc
+
 standard_library.install_aliases()
 
 

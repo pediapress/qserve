@@ -5,11 +5,11 @@ import io
 import pickle
 import sys
 import time
-
-import pytest
 from builtins import chr
 from builtins import object
 from builtins import range
+
+import pytest
 from future import standard_library
 from gevent import sleep, pool
 

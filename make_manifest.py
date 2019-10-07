@@ -24,5 +24,6 @@ def main():
         f.write("include %s\n" % x)
     f.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

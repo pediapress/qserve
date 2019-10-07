@@ -4,8 +4,8 @@ from __future__ import with_statement
 
 import os
 import signal
-import traceback
 import sys
+import traceback
 
 from gevent import socket, core, event, Timeout, version_info
 
@@ -105,7 +105,7 @@ def run_cmd(args, timeout=None):
         if int(sys.version[0]) < 3:
             return st, "".join(chunks)
         else:
-            return st, (b"".join(chunks)).decode('utf-8')
+            return st, (b"".join(chunks)).decode("utf-8")
     except Timeout as t:
         if t is not timeout:
             raise

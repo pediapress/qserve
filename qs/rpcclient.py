@@ -1,4 +1,5 @@
 from builtins import object
+
 try:
     import simplejson as json
 except ImportError:

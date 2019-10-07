@@ -33,7 +33,7 @@ def test_run_cmd_exit_before_close():
         [
             sys.executable,
             "-uc",
-        """import os; import sys; os.spawnl(os.P_NOWAIT, sys.executable, sys.executable, "-c", "from __future__ import print_function; import time; time.sleep(0.2); print('foobar!');")""",
+            """import os; import sys; os.spawnl(os.P_NOWAIT, sys.executable, sys.executable, "-c", "from __future__ import print_function; import time; time.sleep(0.2); print('foobar!');")""",
         ]
     )
     print(st, out)
@@ -58,6 +58,7 @@ def test_run_cmd_unicode():
     # the error only shows up if sys.getfilesystemencoding() != "utf-8"
     # unset LANG to enforce that and run test in an external process
     import qs
+
     if sys.getfilesystemencoding() != "utf-8":
         qslocation = os.path.dirname(os.path.dirname(qs.__file__))
         cmd = (
