@@ -58,11 +58,11 @@ def test_run_cmd_unicode():
     # the error only shows up if sys.getfilesystemencoding() != "utf-8"
     # unset LANG to enforce that and run test in an external process
     import qs
-
-    qslocation = os.path.dirname(os.path.dirname(qs.__file__))
-    cmd = (
-        """/usr/bin/env PYTHONOPTIMIZE= LANG= %s -c 'import sys; sys.path.insert(0, %s); from qs.proc import run_cmd; st, out = run_cmd([u"echo", "hello", unichr(900)]); print st; print out; assert(st)==0, "failed to execute echo with unicode argument"'"""
-        % (sys.executable, repr(qslocation).replace("'", '"'))
-    )
-    err = os.system(cmd)
-    assert err == 0
+    if sys.getfilesystemencoding() != "utf-8":
+        qslocation = os.path.dirname(os.path.dirname(qs.__file__))
+        cmd = (
+            """/usr/bin/env PYTHONOPTIMIZE= LANG= %s -c 'import sys; sys.path.insert(0, %s); from qs.proc import run_cmd; st, out = run_cmd([u"echo", "hello", unichr(900)]); print st; print out; assert(st)==0, "failed to execute echo with unicode argument"'"""
+            % (sys.executable, repr(qslocation).replace("'", '"'))
+        )
+        err = os.system(cmd)
+        assert err == 0
