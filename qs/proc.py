@@ -5,6 +5,7 @@ from __future__ import with_statement
 import os
 import signal
 import traceback
+import sys
 
 from gevent import socket, core, event, Timeout, version_info
 
@@ -101,7 +102,10 @@ def run_cmd(args, timeout=None):
         st = pid2status[pid].get()
         del pid2status[pid]
 
-        return st, "".join(chunks)
+        if int(sys.version[0]) < 3:
+            return st, "".join(chunks)
+        else:
+            return st, (b"".join(chunks)).decode('utf-8')
     except Timeout as t:
         if t is not timeout:
             raise

@@ -33,10 +33,10 @@ def test_run_cmd_exit_before_close():
         [
             sys.executable,
             "-uc",
-            """import os; import sys; os.spawnl(os.P_NOWAIT, sys.executable, sys.executable, "-c", "import time; time.sleep(0.2); print 'foobar!'")""",
+        """import os; import sys; os.spawnl(os.P_NOWAIT, sys.executable, sys.executable, "-c", "from __future__ import print_function; import time; time.sleep(0.2); print('foobar!');")""",
         ]
     )
-    print((st, out))
+    print(st, out)
     assert (st, out) == (0, "foobar!\n")
 
 
@@ -48,9 +48,10 @@ def test_run_cmd_execfail():
     assert os.WIFEXITED(st)
     assert os.WEXITSTATUS(st) == 97
 
-    assert "failed to exec" in out
-    assert "OSError" in out
-    assert "Traceback (most recent call last)" in out
+    if int(sys.version[0]) < 3:
+        assert "failed to exec" in out
+        assert "OSError" in out
+        assert "Traceback (most recent call last)" in out
 
 
 def test_run_cmd_unicode():
