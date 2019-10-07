@@ -3,7 +3,8 @@
 
 def get_version():
     d = {}
-    execfile("qs/__init__.py", d, d)
+    filename = "qs/__init__.py"
+    exec(compile(open(filename, "rb").read(), filename, 'exec'), d, d)
     return d["__version__"]
 
 
