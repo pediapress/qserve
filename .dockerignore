@@ -1,0 +1,12 @@
+**/*.log
+**/__pycache__
+.env*
+.git
+.idea
+.pytest_cache
+.python-version
+.tox
+/qserve.egg-info
+build
+dist
+py27

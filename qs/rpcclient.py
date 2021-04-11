@@ -1,3 +1,5 @@
+from builtins import object
+
 try:
     import simplejson as json
 except ImportError:
@@ -6,7 +8,7 @@ except ImportError:
 import socket
 
 
-class rpcclient(object):
+class RpcClient(object):
     def __init__(self, host=None, port=None):
         if host is None:
             host = "localhost"
@@ -20,7 +22,7 @@ class rpcclient(object):
     def _closesocket(self):
         self.writer = self.reader = self.socket = None
 
-    def _getsocket(self):
+    def _get_socket(self):
         s = self.socket = socket.create_connection((self.host, self.port))
         self.reader = s.makefile("r")
         self.writer = s.makefile("w")
@@ -29,7 +31,7 @@ class rpcclient(object):
         assert isinstance(name, str)
 
         if self.socket is None:
-            self._getsocket()
+            self._get_socket()
 
         d = json.dumps((name, kwargs)) + "\n"
 
@@ -47,7 +49,7 @@ class rpcclient(object):
         try:
             data = _send()
         except Exception:
-            self._getsocket()
+            self._get_socket()
             data = _send()
 
         err = data.get("error")
@@ -56,17 +58,18 @@ class rpcclient(object):
         return data["result"]
 
 
-class serverproxy(object):
-    _make_client = rpcclient
+class ServerProxy(object):
+    _make_client = RpcClient
 
-    def __init__(self, host=None, port=None, rpcclient=None):
-        if rpcclient is None:
-            rpcclient = self._make_client(host=host, port=port)
-        self._rpcclient = rpcclient
+    def __init__(self, host=None, port=None, rpc_client=None):
+        if rpc_client is None:
+            rpc_client = self._make_client(host=host, port=port)
+        self._rpc_client = rpc_client
 
     def __getattr__(self, name):
         def call(**kwargs):
-            return self._rpcclient.send(name, **kwargs)
-        call.func_name = name
+            return self._rpc_client.send(name, **kwargs)
+
+        call.__name__ = name
         self.__dict__[name] = call
         return call

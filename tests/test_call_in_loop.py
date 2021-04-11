@@ -1,9 +1,12 @@
 #! /usr/bin/env py.test
+from __future__ import print_function
 
-import pytest
 import time
+
 import gevent
-from qs.misc import call_in_loop
+import pytest
+
+from qs.misc import CallInLoop
 
 
 def throw_error():
@@ -11,7 +14,7 @@ def throw_error():
 
 
 def test_iterate_error():
-    c = call_in_loop(0.05, throw_error)
+    c = CallInLoop(0.05, throw_error)
     stime = time.time()
     c.iterate()
     needed = time.time() - stime
@@ -23,11 +26,11 @@ def test_fail_and_restart():
 
     def doit():
         lst.append(len(lst))
-        print "doit", lst
+        print("doit", lst)
         if len(lst) == 5:
             raise RuntimeError("size is 5")
         elif len(lst) == 10:
             raise gevent.GreenletExit("done")
 
-    c = call_in_loop(0.001, doit)
+    c = CallInLoop(0.001, doit)
     pytest.raises(gevent.GreenletExit, c)

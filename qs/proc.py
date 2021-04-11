@@ -2,8 +2,13 @@
 
 from __future__ import with_statement
 
-import os, signal, traceback
+import os
+import signal
+import sys
+import traceback
+
 from gevent import socket, core, event, Timeout, version_info
+
 if not version_info[:2] < (1, 0):
     from gevent import get_hub
 
@@ -21,21 +26,22 @@ def got_signal(*args):
         except OSError:
             return
 
-_nochild = True
+
+_no_child = True
 _initialized = False
 
 
 def _init():
     global _initialized
-    global _nochild
+    global _no_child
     if _initialized:
         return
 
     if version_info[:2] < (1, 0):
         core.event(core.EV_SIGNAL | core.EV_PERSIST, signal.SIGCHLD, got_signal).add()
     else:
-        _nochild = getattr(get_hub().loop, "nochild", True)
-        if _nochild:
+        _no_child = getattr(get_hub().loop, "nochild", True)
+        if _no_child:
             signal.signal(signal.SIGCHLD, got_signal)
     _initialized = True
 
@@ -44,7 +50,7 @@ def run_cmd(args, timeout=None):
     _init()
     args = list(args)
     for i, x in enumerate(args):
-        if isinstance(x, unicode):
+        if isinstance(x, str):
             args[i] = x.encode("utf-8")
 
     sp = socket.socketpair()
@@ -59,13 +65,15 @@ def run_cmd(args, timeout=None):
             os.execvp(args[0], args)
         except:
             stderr = os.fdopen(2, "w", 0)
-            os.write(2, "failed to exec child process: %r\nPATH=%r" % (args, os.environ.get('PATH')))
+            os.write(
+                2, "failed to exec child process: %r\nPATH=%r" % (args, os.environ.get("PATH"))
+            )
             traceback.print_exc(file=stderr)
         finally:
             os._exit(97)
 
     pid2status[pid] = event.AsyncResult()
-    if not _nochild:
+    if not _no_child:
 
         def cb():
             pid2status[pid].set(child_watcher.rstatus)
@@ -94,8 +102,11 @@ def run_cmd(args, timeout=None):
         st = pid2status[pid].get()
         del pid2status[pid]
 
-        return st, "".join(chunks)
-    except Timeout, t:
+        if int(sys.version[0]) < 3:
+            return st, "".join(chunks)
+        else:
+            return st, (b"".join(chunks)).decode("utf-8")
+    except Timeout as t:
         if t is not timeout:
             raise
     finally:

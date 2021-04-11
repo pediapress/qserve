@@ -16,6 +16,10 @@ def main():
     remove("Makefile")
     remove(".gitignore")
     remove("make-release")
+    remove("requirements.in")
+    remove("requirements.txt")
+    remove("requirements-dev.in")
+    remove("requirements-dev.txt")
 
     files.sort()
 
@@ -24,5 +28,6 @@ def main():
         f.write("include %s\n" % x)
     f.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
