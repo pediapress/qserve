@@ -1,4 +1,4 @@
-[![Python Test 2.7 | 3.5 | 3.6 | 3.7 | 3.8](https://github.com/pediapress/qserve/actions/workflows/build-and-test-python.yml/badge.svg)](https://github.com/pediapress/qserve/actions/workflows/build-and-test-python.yml)
+[![Build and Test](https://github.com/pediapress/qserve/actions/workflows/build-and-test-python.yml/badge.svg)](https://github.com/pediapress/qserve/actions/workflows/build-and-test-python.yml)
 
 # qserve - job queue server
 
