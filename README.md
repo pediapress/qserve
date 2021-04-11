@@ -3,7 +3,7 @@
 # qserve - job queue server
 
 
-qserve is used in mwlib_. It's a job queue server written in python
+qserve is used in [mwlib](http://code.pediapress.com). It's a job queue server written in python
 and it's missing documentation.
 
 
@@ -39,5 +39,3 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-.. _mwlib: http://code.pediapress.com
