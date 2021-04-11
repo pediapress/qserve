@@ -1,15 +1,13 @@
-.. -*- mode: rst; coding: utf-8 -*-
+[![Python Test 2.7 | 3.5 | 3.6 | 3.7 | 3.8](https://github.com/pediapress/qserve/actions/workflows/build-and-test-python.yml/badge.svg)](https://github.com/pediapress/qserve/actions/workflows/build-and-test-python.yml)
 
-======================================================================
-qserve - job queue server
-======================================================================
+# qserve - job queue server
+
 
 qserve is used in mwlib_. It's a job queue server written in python
 and it's missing documentation.
 
 
-License
-======================================================================
+## License
 Copyright (c) PediaPress GmbH
 
 All rights reserved.
