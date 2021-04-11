@@ -9,13 +9,13 @@ from qs import proc
 
 
 def test_run_cmd_with_this():
-    st, out = proc.run_cmd([sys.executable, "-c" "import this"])
+    st, out = proc.run_cmd([sys.executable, "-c", "import this"])
     assert "Namespaces are one honking great idea -- let's do more of those!" in out
 
 
 def test_run_cmd_timeout():
     stime = time.time()
-    st, out = proc.run_cmd([sys.executable, "-c" "import time; time.sleep(10)"], 0.2)
+    st, out = proc.run_cmd([sys.executable, "-c", "import time; time.sleep(10)"], 0.2)
     needed = time.time() - stime
     assert (st, out) == (9, "")
     assert needed >= 0.18
@@ -60,10 +60,10 @@ def test_run_cmd_unicode():
     import qs
 
     if sys.getfilesystemencoding() != "utf-8":
-        qslocation = os.path.dirname(os.path.dirname(qs.__file__))
+        qs_location = os.path.dirname(os.path.dirname(qs.__file__))
         cmd = (
             """/usr/bin/env PYTHONOPTIMIZE= LANG= %s -c 'import sys; sys.path.insert(0, %s); from qs.proc import run_cmd; st, out = run_cmd([u"echo", "hello", unichr(900)]); print st; print out; assert(st)==0, "failed to execute echo with unicode argument"'"""
-            % (sys.executable, repr(qslocation).replace("'", '"'))
+            % (sys.executable, repr(qs_location).replace("'", '"'))
         )
         err = os.system(cmd)
         assert err == 0
