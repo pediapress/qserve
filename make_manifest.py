@@ -16,6 +16,10 @@ def main():
     remove("Makefile")
     remove(".gitignore")
     remove("make-release")
+    remove("requirements.in")
+    remove("requirements.txt")
+    remove("requirements-dev.in")
+    remove("requirements-dev.txt")
 
     files.sort()
 
