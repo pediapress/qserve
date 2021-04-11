@@ -1,34 +1,35 @@
 #! /usr/bin/env python
 from __future__ import print_function
+from builtins import str
 
 import subprocess
 import sys
 
-import commands
+
+def get_status_output(*args, **kwargs):
+    p = subprocess.Popen(*args, **kwargs)
+    stdout, stderr = p.communicate()
+    return p.returncode, stdout, stderr
 
 
 def system(cmd):
     print("====> Running", cmd)
-    popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    nl = True
-    while 1:
-        char = popen.stdout.read(1)
-        if not char:
-            break
-        if nl:
-            sys.stdout.write("    ")
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        nl = char == "\n"
+    p = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, bufsize=1
+    )
+    for line in iter(p.stdout.readline, b""):
+        print(line)
 
-    st = popen.wait()
+    st = p.wait()
     if st != 0:
         sys.exit("Error: command %r failed" % cmd)
     print()
 
 
 def main():
-    st, tags = commands.getstatusoutput("git tag")
+    st, tags, _ = get_status_output(
+        "git tag", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True
+    )
     assert st == 0, "failed to get tags"
     tags = set(tags.split())
     import setup
@@ -37,9 +38,11 @@ def main():
 
     assert version not in tags, "already have tagged %s" % version
 
-    st, descr = commands.getstatusoutput("git describe --all --dirty")
+    st, description, _ = get_status_output(
+        "git describe --all --dirty", stdout=subprocess.PIPE, shell=True
+    )
     assert st == 0
-    dirty = "-dirty" in descr
+    dirty = "-dirty" in str(description)
     if dirty:
         print("working directory is dirty")
 
