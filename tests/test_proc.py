@@ -59,7 +59,8 @@ def test_run_cmd_unicode():
     # unset LANG to enforce that and run test in an external process
     import qs
 
-    if sys.getfilesystemencoding() != "utf-8":
+    if sys.getfilesystemencoding().lower() != "utf-8":
+        print("-----", sys.getfilesystemencoding(), "----")
         qs_location = os.path.dirname(os.path.dirname(qs.__file__))
         cmd = (
             """/usr/bin/env PYTHONOPTIMIZE= LANG= %s -c 'import sys; sys.path.insert(0, %s); from qs.proc import run_cmd; st, out = run_cmd([u"echo", "hello", unichr(900)]); print st; print out; assert(st)==0, "failed to execute echo with unicode argument"'"""
