@@ -1,5 +1,8 @@
+include .dockerignore
+include .github/workflows/build-and-test-python.yml
+include Dockerfile-py27
 include MANIFEST.in
-include README.rst
+include README.md
 include conftest.py
 include qs/__init__.py
 include qs/__main__.py
