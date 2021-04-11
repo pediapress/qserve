@@ -4,7 +4,7 @@
 def get_version():
     d = {}
     filename = "qs/__init__.py"
-    exec(compile(open(filename, "rb").read(), filename, 'exec'), d, d)
+    exec(compile(open(filename, "rb").read(), filename, "exec"), d, d)
     return d["__version__"]
 
 
@@ -19,6 +19,7 @@ if __name__ == "__main__":
         url="https://github.com/pediapress/qserve",
         description="job queue server",
         license="BSD License",
+        install_requires=["future"],
         maintainer="pediapress.com",
         maintainer_email="info@pediapress.com",
         packages=["qs"],
