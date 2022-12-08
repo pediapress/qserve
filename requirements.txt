@@ -4,12 +4,21 @@
 #
 #    pip-compile requirements.in
 #
-certifi==2019.9.11        # via requests
-chardet==3.0.4            # via requests
+certifi==2022.12.7
+    # via requests
+chardet==3.0.4
+    # via requests
 future==0.17.1
+    # via -r requirements.in
 gevent==1.4.0
-greenlet==0.4.15          # via gevent
-idna==2.8                 # via requests
+    # via -r requirements.in
+greenlet==0.4.15
+    # via gevent
+idna==2.8
+    # via requests
 requests==2.22.0
+    # via -r requirements.in
 simplejson==3.16.0
-urllib3==1.25.6           # via requests
+    # via -r requirements.in
+urllib3==1.25.6
+    # via requests
