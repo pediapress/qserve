@@ -12,14 +12,10 @@ pip-compile-dev:
 install:: pip-compile pip-compile-dev
 	pip install -r requirements.txt
 	pip install -r requirements-dev.txt
-#	pip install -e .s
+#	pip install -e .
 
-docker-build-py27::
-	docker build -f Dockerfile-py27 -t ${IMAGE_NAME}-py27:${IMAGE_LABEL} .
+docker-build::
+	docker build -f Dockerfile -t ${IMAGE_NAME}:${IMAGE_LABEL} .
 
-docker-debug-py27::
-	docker run -it --rm --entrypoint='' \
-		${IMAGE_NAME}-py27:${IMAGE_LABEL} bash
-
-docker-test-py27:: docker-build-py27
-	docker run --rm ${IMAGE_NAME}-py27:${IMAGE_LABEL}
+docker-test:: docker-build
+	docker run --rm ${IMAGE_NAME}:${IMAGE_LABEL}
