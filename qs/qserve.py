@@ -11,11 +11,8 @@ from builtins import str
 
 import gevent
 import gevent.pool
-from future import standard_library
 
 from qs import jobs, rpcserver, misc
-
-standard_library.install_aliases()
 
 
 class db(object):
@@ -224,7 +221,7 @@ def parse_options(argv=None):
 
     port = 14311
     interface = "0.0.0.0"
-    datadir = None
+    data_dir = None
     allowed_ips = set()
 
     for o, a in opts:
@@ -237,14 +234,14 @@ def parse_options(argv=None):
         elif o in ("-i", "--interface"):
             interface = a
         elif o in ("-d"):
-            datadir = a
+            data_dir = a
         elif o in ("-a"):
             allowed_ips.add(a)
         elif o in ("-h", "--help"):
             usage()
             sys.exit(0)
 
-    return dict(port=port, interface=interface, datadir=datadir, allowed_ips=allowed_ips)
+    return dict(port=port, interface=interface, data_dir=data_dir, allowed_ips=allowed_ips)
 
 
 def main(argv=None):

@@ -10,12 +10,9 @@ from builtins import object
 from builtins import range
 
 import pytest
-from future import standard_library
 from gevent import sleep, pool
 
 from qs import jobs
-
-standard_library.install_aliases()
 
 
 @pytest.fixture

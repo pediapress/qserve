@@ -6,7 +6,7 @@ from qs import qserve
 
 
 def defopts(**kw):
-    res = {"interface": "0.0.0.0", "datadir": None, "allowed_ips": set([]), "port": 14311}
+    res = {"interface": "0.0.0.0", "data_dir": None, "allowed_ips": set([]), "port": 14311}
     res.update(kw)
     return res
 
@@ -63,14 +63,14 @@ def test_parse_options_interface():
     assert options == defopts(interface="127.0.0.1")
 
 
-def test_parse_options_datadir():
+def test_parse_options_data_dir():
     options = qserve.parse_options(["-d", "/tmp/foo"])
-    assert options == defopts(datadir="/tmp/foo")
+    assert options == defopts(data_dir="/tmp/foo")
 
 
-def test_parse_options_allowedip():
+def test_parse_options_allowed_ip():
     options = qserve.parse_options(["-a", "127.0.0.1", "-a", "192.168.10.210"])
-    assert options == defopts(allowed_ips=set(["127.0.0.1", "192.168.10.210"]))
+    assert options == defopts(allowed_ips={"127.0.0.1", "192.168.10.210"})
 
 
 def test_parse_options_help():
