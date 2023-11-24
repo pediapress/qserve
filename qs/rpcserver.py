@@ -1,12 +1,6 @@
 #! /usr/bin/env python
 
-from __future__ import print_function
-
 import traceback
-from builtins import object
-from builtins import str
-
-from past.builtins import basestring
 
 try:
     import simplejson as json
@@ -23,16 +17,16 @@ def key2str(kwargs):
     return r
 
 
-class Dispatcher(object):
+class Dispatcher:
     def __call__(self, req):
         name, kwargs = req
         kwargs = key2str(kwargs)
 
-        assert isinstance(name, basestring), "bad name argument"
+        assert isinstance(name, str), "bad name argument"
         cmd_name = str("rpc_" + name)
         m = getattr(self, cmd_name, None)
         if not m:
-            raise RuntimeError("no such method: %r" % (name,))
+            raise RuntimeError("no such method: %r" % (cmd_name,))
         return m(**kwargs)
 
 
@@ -57,7 +51,7 @@ class ClientGreenlet(Greenlet):
         return "<Client %s>" % self.client_id
 
 
-class Server(object):
+class Server:
     def __init__(self, port=8080, host="", get_request_handler=None, secret=None, is_allowed=None):
         self.port = port
         self.host = host
@@ -89,14 +83,13 @@ class Server(object):
             self.log("+DENY %r" % (addr,))
             sock.close()
             return
-
         sock_file = None
         current = getcurrent()
         try:
             self.client_count += 1
             clientid = "<%s %s:%s>" % (self.client_count, addr[0], addr[1])
             current.clientid = clientid
-            sock_file = sock.makefile()
+            sock_file = sock.makefile("rw")
             lineq = queue.Queue()
 
             def readlines():
@@ -115,7 +108,7 @@ class Server(object):
             current.link(lambda _: readgr.kill())
             handle_request = self.get_request_handler(client=(sock, addr), clientid=clientid)
 
-            # self.log("+connect: %s" % (clientid, ))
+            self.log("+connect: %s" % (clientid, ))
 
             while 1:
                 current.status = "idle"

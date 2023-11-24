@@ -1,8 +1,5 @@
 #! /usr/bin/env python
 
-from __future__ import division
-from __future__ import print_function
-
 import os
 import sys
 import time
@@ -31,7 +28,7 @@ def short_err_msg():
     return "".join(msg)
 
 
-class Worker(object):
+class Worker:
     def __init__(self, proxy):
         self.proxy = proxy
 
@@ -42,10 +39,12 @@ class Worker(object):
         self.jobid_prefix = None
 
         method = job["channel"]
+        
+        method_name = f"rpc_{method}"
 
-        m = getattr(self, "rpc_" + method, None)
+        m = getattr(self, method_name, None)
         if m is None:
-            raise RuntimeError("no such method %r" % (method,))
+            raise RuntimeError("no such method %r" % (method_name,))
 
         kwargs = job.get("payload") or dict()
         tmp = {}
@@ -54,20 +53,19 @@ class Worker(object):
                 tmp[str(k)] = v
             else:
                 tmp[k] = v
-
         return m(**tmp)
 
     def q_set_info(self, info):
         return self.proxy.q_set_info(jobid=self.jobid, info=info)
 
-    def q_add(
+    def qadd(
         self, channel, payload=None, jobid=None, prefix=None, wait=False, timeout=None, ttl=None
     ):
         """call q_add on proxy with the same priority as the current job"""
         if jobid is None and prefix is not None:
             jobid = "%s::%s" % (prefix, channel)
 
-        return self.proxy.q_add(
+        return self.proxy.qadd(
             channel=channel,
             payload=payload,
             priority=self.priority,
@@ -77,8 +75,8 @@ class Worker(object):
             ttl=ttl,
         )
 
-    def q_add_w(self, channel, payload=None, jobid=None, timeout=None):
-        r = self.proxy.q_add(
+    def qaddw(self, channel, payload=None, jobid=None, timeout=None):
+        r = self.proxy.qadd(
             channel=channel,
             payload=payload,
             priority=self.priority,
@@ -98,7 +96,6 @@ def main(
 ):
     if port is None:
         port = 14311
-
     channels = []
     skip_channels = []
 
@@ -161,12 +158,13 @@ def main(
         def check_parent():
             pass
 
-    def handle_one_job(qs):
+    def handle_one_job(server_proxy: ServerProxy):
+        print("SLAVE HANDLING", server_proxy)
         sleeptime = 0.5
 
         while 1:
             try:
-                job = qs.qpull(channels=channels)
+                job = server_proxy.qpull(channels=channels)
                 break
             except Exception as err:
                 check_parent()
@@ -177,24 +175,26 @@ def main(
                     sleeptime *= 2
 
         check_parent()
-        # print "got job:", job
+        print("got job:", job)
         try:
-            result = WorkHandler(qs).dispatch(job)
+            print(server_proxy)
+            result = WorkHandler(server_proxy).dispatch(job)
         except Exception as err:
             print("error:", err)
             try:
-                qs.qfinish(jobid=job["jobid"], error=short_err_msg())
+                server_proxy.qfinish(jobid=job["jobid"], error=short_err_msg())
                 traceback.print_exc()
             except:
                 pass
             return
 
         try:
-            qs.qfinish(jobid=job["jobid"], result=result)
+            server_proxy.qfinish(jobid=job["jobid"], result=result)
         except:
             pass
 
     def start_worker():
+        print("Server proxy form start_worker", host, port)
         qs = ServerProxy(host=host, port=port)
         while 1:
             handle_one_job(qs)
@@ -203,7 +203,6 @@ def main(
 
     def run_with_threads():
         import threading
-
         for i in range(numthreads):
             t = threading.Thread(target=start_worker)
             t.start()
@@ -216,7 +215,7 @@ def main(
 
     def run_with_procs():
         children = set()
-
+        print("Proc run")
         while 1:
             while len(children) < num_procs:
                 try:
@@ -228,6 +227,7 @@ def main(
 
                 if pid == 0:
                     try:
+                        print("Server Proxy", host, port)
                         qs = ServerProxy(host=host, port=port)
                         handle_one_job(qs)
                     finally:
@@ -269,7 +269,7 @@ def main(
 
 if __name__ == "__main__":
 
-    class Commands(object):
+    class Commands:
         def rpc_divide(self, a, b):
             print("rpc_divide", (a, b))
             return old_div(a, b)

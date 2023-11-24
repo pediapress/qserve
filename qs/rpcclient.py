@@ -73,3 +73,6 @@ class ServerProxy(object):
         call.__name__ = name
         self.__dict__[name] = call
         return call
+
+    def get_client(self):
+        return self._rpc_client

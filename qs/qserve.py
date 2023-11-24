@@ -1,13 +1,7 @@
-#! /usr/bin/env python
-
-from __future__ import print_function
-
 import getopt
 import os
 import pickle
 import sys
-from builtins import object
-from builtins import str
 
 import gevent
 import gevent.pool
@@ -26,20 +20,27 @@ class QPlugin(object):
         self.running_jobs = {}
 
     def rpc_qadd(
-        self, channel, payload=None, priority=0, job_id=None, wait=False, timeout=None, ttl=None
+        self,
+        channel,
+        payload=None,
+        priority=0,
+        jobid=None,
+        wait=False,
+        timeout=None,
+        ttl=None,
     ):
-        job_id = self.workq.push(
+        jobid = self.workq.push(
             payload=payload,
             priority=priority,
             channel=channel,
-            jobid=job_id,
+            jobid=jobid,
             timeout=timeout,
             ttl=ttl,
         )
         if not wait:
-            return job_id
+            return jobid
 
-        res = self.workq.waitjobs([job_id])[0]
+        res = self.workq.waitjobs([jobid])[0]
         return res._json()
 
     def rpc_qpull(self, channels=None):
@@ -48,7 +49,7 @@ class QPlugin(object):
 
         j = self.workq.pop(channels)
         self.running_jobs[j.jobid] = j
-
+        print("pull", j)
         return j._json()
 
     def rpc_qfinish(self, jobid, result=None, error=None, traceback=None):
@@ -61,14 +62,17 @@ class QPlugin(object):
             del self.running_jobs[jobid]
 
     def rpc_qsetinfo(self, jobid, info):
+        print("setinfo: %s: %r" % (jobid, info))
         self.workq.updatejob(jobid, info)
 
     def rpc_qinfo(self, jobid):
+        print("info: %s" % (jobid,))
         if jobid in self.workq.id2job:
             return self.workq.id2job[jobid]._json()
         return None
 
     def rpc_qwait(self, jobids):
+        print("wait", jobids)
         res = self.workq.waitjobs(jobids)
         return [j._json() for j in res]
 
@@ -83,6 +87,7 @@ class QPlugin(object):
         self.workq.dropjobs(jobids)
 
     def rpc_qprefixmatch(self, prefix):
+        print("prefixmatch", prefix)
         return list(self.workq.prefixmatch(prefix))
 
     def rpc_getstats(self):
@@ -113,7 +118,8 @@ class Main(object):
 
         if qpath and os.path.exists(qpath):
             print("loading", qpath)
-            self.db = pickle.load(open(qpath))
+            q_file = open(qpath, "rb")
+            self.db = pickle.load(q_file)
             print("loaded", len(self.db.workq.id2job), "jobs")
         else:
             self.db = db()
@@ -241,7 +247,9 @@ def parse_options(argv=None):
             usage()
             sys.exit(0)
 
-    return dict(port=port, interface=interface, data_dir=data_dir, allowed_ips=allowed_ips)
+    return dict(
+        port=port, interface=interface, data_dir=data_dir, allowed_ips=allowed_ips
+    )
 
 
 def main(argv=None):

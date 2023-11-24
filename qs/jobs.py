@@ -1,7 +1,5 @@
 #! /usr/bin/env python
 
-from __future__ import print_function
-
 import heapq
 import random
 import time
@@ -9,7 +7,6 @@ import time
 from builtins import hex
 from builtins import object
 from gevent import event
-from past.builtins import basestring
 from functools import total_ordering
 
 
@@ -239,6 +236,7 @@ class workq(object):
         self._mark_finished(j, result=result, error=error, ttl=ttl)
 
     def updatejob(self, jobid, info):
+        print("updatejob", jobid, info)
         j = self.id2job[jobid]
         j.info.update(info)
 
@@ -249,7 +247,6 @@ class workq(object):
 
         if job.jobid is None:
             job.jobid = job.serial
-
         self.id2job[job.jobid] = job
 
         channel = job.channel
@@ -278,7 +275,7 @@ class workq(object):
         if jobid is not None:
             if jobid in self.id2job and self.id2job[jobid].error != "killed":
                 return jobid
-
+        print("Job", jobid, "not found, pushing new job")
         return self.pushjob(
             job(
                 payload=payload,
@@ -322,5 +319,5 @@ class workq(object):
 
     def prefixmatch(self, prefix):
         for jobid in self.id2job:
-            if isinstance(jobid, basestring) and jobid.startswith(prefix):
+            if isinstance(jobid, str) and jobid.startswith(prefix):
                 yield jobid
