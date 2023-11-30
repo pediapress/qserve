@@ -11,6 +11,7 @@
 .~
 .DS_Store
 .ropeproject
+.idea
 build
 ID
 /MANIFEST

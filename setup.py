@@ -11,5 +11,5 @@ setup(
     name="qserve",
     packages=find_packages(),
     url="https://github.com/pediapress/qserve",
-    version="0.3.0",
+    version="0.3.1",
 )

@@ -10,7 +10,11 @@ from builtins import str
 
 from past.utils import old_div
 
+from qs.log import root_logger
 from qs.rpcclient import ServerProxy
+
+
+logger = root_logger.getChild(__name__)
 
 
 def short_err_msg():
@@ -22,7 +26,7 @@ def short_err_msg():
     a(": ")
     a(str(val))
 
-    file, lineno, name, line = traceback.extract_tb(tb)[-1]
+    file, lineno, name, _ = traceback.extract_tb(tb)[-1]
     a(" in function %s, file %s, line %s" % (name, file, lineno))
 
     return "".join(msg)
@@ -103,11 +107,11 @@ def main(
         import getopt
 
         try:
-            opts, args = getopt.getopt(
+            opts, _ = getopt.getopt(
                 argv, "c:s:", ["host=", "port=", "numthreads=", "numprocs=", "channel=", "skip="]
             )
         except getopt.GetoptError as err:
-            print(str(err))
+            logger.exception(str(err))
             sys.exit(10)
 
         for o, a in opts:
@@ -150,16 +154,17 @@ def main(
 
         def check_parent():
             if os.getppid() == 1:
-                print("parent died. exiting.")
+                logger.error("parent died. exiting.")
                 os._exit(0)
 
     else:
 
         def check_parent():
+            #
             pass
 
     def handle_one_job(server_proxy: ServerProxy):
-        print("SLAVE HANDLING", server_proxy)
+        logger.info("SLAVE HANDLING %s" % server_proxy)
         sleeptime = 0.5
 
         while 1:
@@ -168,22 +173,22 @@ def main(
                 break
             except Exception as err:
                 check_parent()
-                print("Error while calling pulljob:", str(err))
+                logger.error("Error while calling pulljob: %s" % err)
                 time.sleep(sleeptime)
                 check_parent()
                 if sleeptime < 60:
                     sleeptime *= 2
 
         check_parent()
-        print("got job:", job)
+        logger.info("got job: %s" % job)
         try:
-            print(server_proxy)
+            logger.info(server_proxy)
             result = WorkHandler(server_proxy).dispatch(job)
         except Exception as err:
-            print("error:", err)
+            logger.error("error: %s" % err)
             try:
                 server_proxy.qfinish(jobid=job["jobid"], error=short_err_msg())
-                traceback.print_exc()
+                logger.exception("error while handling job")
             except:
                 pass
             return
@@ -194,16 +199,18 @@ def main(
             pass
 
     def start_worker():
-        print("Server proxy form start_worker", host, port)
+        logger.info("Server proxy form start_worker %s:%s" % (host, port))
         qs = ServerProxy(host=host, port=port)
         while 1:
             handle_one_job(qs)
 
-    print("pulling jobs from", "%s:%s" % (host, port), "for", ", ".join(channels))
+    channels_str = ", ".join(channels)
+    logger.info(f"pulling jobs from {host}: {port} for {channels_str}")
 
     def run_with_threads():
         import threading
         for i in range(numthreads):
+            logger.debug("starting thread %s" % i)
             t = threading.Thread(target=start_worker)
             t.start()
 
@@ -215,32 +222,32 @@ def main(
 
     def run_with_procs():
         children = set()
-        print("Proc run")
+        logger.info("Proc run")
         while 1:
             while len(children) < num_procs:
                 try:
                     pid = os.fork()
                 except:
-                    print("failed to fork child")
+                    logger.info("failed to fork child")
                     time.sleep(1)
                     continue
 
                 if pid == 0:
                     try:
-                        print("Server Proxy", host, port)
+                        logger.info("Server Proxy %s:%s" % (host, port))
                         qs = ServerProxy(host=host, port=port)
                         handle_one_job(qs)
                     finally:
                         os._exit(0)
-                # print "forked", pid
+                logger.debug("forked %s" % pid)
                 children.add(pid)
 
             try:
-                pid, st = os.waitpid(-1, 0)
+                pid, _ = os.waitpid(-1, 0)
             except OSError:
                 continue
 
-            # print "done",  pid
+            logger.debug("done %s" % pid)
             try:
                 children.remove(pid)
             except KeyError:
@@ -253,6 +260,7 @@ def main(
 
         pool = gevent.pool.Pool()
         for i in range(numgreenlets):
+            logger.debug("starting greenlet %s" % i)
             pool.spawn(CallInLoop(1.0, start_worker))
 
         pool.join()
@@ -271,7 +279,7 @@ if __name__ == "__main__":
 
     class Commands:
         def rpc_divide(self, a, b):
-            print("rpc_divide", (a, b))
+            logger.info("rpc_divide %s %s" % (a, b))
             return old_div(a, b)
 
     main(Commands, num_procs=2)

@@ -8,6 +8,9 @@ except ImportError:
     import json
 
 from gevent import pool, server as gserver, Greenlet, getcurrent, queue, spawn, GreenletExit
+from qs.log import root_logger
+
+logger = root_logger.getChild(__name__)
 
 
 def key2str(kwargs):
@@ -76,7 +79,7 @@ class Server:
         self.stream_server.serve_forever()
 
     def log(self, msg):
-        print(msg)
+        logger.info(msg)
 
     def handle_client(self, sock, addr):
         if not self.is_allowed(addr[0]):
@@ -130,15 +133,15 @@ class Server:
                     raise
                 except Exception as err:
                     response = json.dumps(dict(error=str(err))) + "\n"
-                    traceback.print_exc()
+                    logger.exception(err)
 
                 current.status = "sending response: %s" % response[:-1]
                 sock_file.write(response)
                 sock_file.flush()
         except GreenletExit:
             raise
-        except:
-            traceback.print_exc()
+        except Exception:
+            logger.exception("error handling client")
 
         finally:
             current.status = "dead"

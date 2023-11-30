@@ -7,6 +7,10 @@ import gevent
 import gevent.pool
 
 from qs import jobs, rpcserver, misc
+from qs.log import root_logger
+
+
+logger = root_logger.getChild("qserve")
 
 
 class db(object):
@@ -49,30 +53,30 @@ class QPlugin(object):
 
         j = self.workq.pop(channels)
         self.running_jobs[j.jobid] = j
-        print("pull", j)
+        logger.info(f"pull {j}")
         return j._json()
 
     def rpc_qfinish(self, jobid, result=None, error=None, traceback=None):
         if error:
-            print("error finish: %s: %r" % (jobid, error))
+            logger.error("error finish: %s: %r" % (jobid, error))
         else:
-            print("finish: %s: %r" % (jobid, result))
+            logger.info("finish: %s: %r" % (jobid, result))
         self.workq.finishjob(jobid, result=result, error=error)
         if jobid in self.running_jobs:
             del self.running_jobs[jobid]
 
     def rpc_qsetinfo(self, jobid, info):
-        print("setinfo: %s: %r" % (jobid, info))
+        logger.info("setinfo: %s: %r" % (jobid, info))
         self.workq.updatejob(jobid, info)
 
     def rpc_qinfo(self, jobid):
-        print("info: %s" % (jobid,))
+        logger.info("info: %s" % (jobid,))
         if jobid in self.workq.id2job:
             return self.workq.id2job[jobid]._json()
         return None
 
     def rpc_qwait(self, jobids):
-        print("wait", jobids)
+        logger.info("wait", jobids)
         res = self.workq.waitjobs(jobids)
         return [j._json() for j in res]
 
@@ -87,7 +91,7 @@ class QPlugin(object):
         self.workq.dropjobs(jobids)
 
     def rpc_qprefixmatch(self, prefix):
-        print("prefixmatch", prefix)
+        logger.info("prefixmatch", prefix)
         return list(self.workq.prefixmatch(prefix))
 
     def rpc_getstats(self):
@@ -95,7 +99,7 @@ class QPlugin(object):
 
     def shutdown(self):
         for j in list(self.running_jobs.values()):
-            # print "reschedule", j
+            logger.debug("reschedule %s" % j)
             self.workq.pushjob(j)
 
 
@@ -117,17 +121,17 @@ class Main(object):
             qpath = None
 
         if qpath and os.path.exists(qpath):
-            print("loading", qpath)
+            logger.info(f"loading {qpath}")
             q_file = open(qpath, "rb")
             self.db = pickle.load(q_file)
-            print("loaded", len(self.db.workq.id2job), "jobs")
+            logger.info(f"loaded {len(self.db.workq.id2job)} jobs")
         else:
             self.db = db()
         self.qpath = qpath
 
     def savedb(self):
         if self.qpath:
-            print("saving", self.qpath)
+            logger.info(f"saving {self.qpath}")
             pickle.dump(self.db, open(self.qpath, "w"), 2)
 
     def is_allowed_ip(self, ip):
@@ -141,11 +145,10 @@ class Main(object):
 
     def report(self):
         self.db.workq.report()
-        # pool = self.server.pool
-        # print "= %s clients" % len(pool)
-        # for cl in pool:
-        #     print cl
-        print()
+        pool = self.server.pool
+        logger.debug ("= %s clients" % len(pool))
+        for cl in pool:
+            logger.debug(cl)
 
     def run(self):
         class Handler(rpcserver.RequestHandler, QPlugin):
@@ -162,7 +165,7 @@ class Main(object):
             is_allowed=self.is_allowed_ip,
         )
         self.port = s.stream_server.socket.getsockname()[1]
-        print("listening on %s:%s" % (self.interface, self.port))
+        logger.info("listening on %s:%s" % (self.interface, self.port))
 
         loops = [(self.report, 20), (self.watchdog, 15), (self.handletimeouts, 1)]
         workers = gevent.pool.Pool()
@@ -186,13 +189,13 @@ class Main(object):
                 bs.pre_start()
             else:
                 bs.init_socket()  # gevent >= 1.0b1
-            print("starting backdoor on 127.0.0.1:%s" % bs.socket.getsockname()[1])
+            logger.info("starting backdoor on 127.0.0.1:%s" % bs.socket.getsockname()[1])
             bs.start()
 
         try:
             s.run_forever()
         except KeyboardInterrupt:
-            print("interrupted")
+            logger.info("interrupted")
         finally:
             self.savedb()
             workers.kill()
@@ -218,11 +221,11 @@ def parse_options(argv=None):
     try:
         opts, args = getopt.getopt(argv, "a:d:p:i:h", ["help", "port=", "interface="])
     except getopt.GetoptError as err:
-        print(str(err))
+        logger.info(str(err))
         sys.exit(10)
 
     if args:
-        print("too many arguments")
+        logger.info("too many arguments")
         sys.exit(10)
 
     port = 14311
@@ -235,7 +238,7 @@ def parse_options(argv=None):
             try:
                 port = port_from_str(a)
             except ValueError:
-                print("expected positive integer as argument to %s" % o)
+                logger.info("expected positive integer as argument to %s" % o)
                 sys.exit(10)
         elif o in ("-i", "--interface"):
             interface = a
@@ -253,6 +256,7 @@ def parse_options(argv=None):
 
 
 def main(argv=None):
+    logger.info("starting qserve")
     Main(**parse_options(argv=argv)).run()
 
 

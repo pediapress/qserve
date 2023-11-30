@@ -8,6 +8,9 @@ from builtins import hex
 from builtins import object
 from gevent import event
 from functools import total_ordering
+from qs.log import root_logger
+
+logger = root_logger.getChild(__name__)
 
 
 @total_ordering
@@ -59,9 +62,7 @@ class job(object):
             self.finish_event.set()
 
     def _json(self):
-        d = self.__dict__.copy()
-        del d["finish_event"]
-        return d
+        return self.__getstate__()
 
 
 class workq(object):
@@ -107,7 +108,7 @@ class workq(object):
         for k, v in list(self.channel2q.items()):
             c = self._preenjobq(v)
             if c:
-                print("preen:", k, c)
+                logger.info(f"preen: {k} {c}")
 
     def _mark_finished(self, job, **kw):
         if job.done:
@@ -144,7 +145,7 @@ class workq(object):
 
             heapq.heappop(self.timeoutq)
             self._mark_finished(job, error="timeout")
-            print("timeout:", job._json())
+            logger.info(f"timeout: {job._json()}")
 
         self._preenall()
 
@@ -180,7 +181,7 @@ class workq(object):
                 job.deadline = now + job.ttl
                 mcount += 1
         if dcount or mcount:
-            print("watchdog: dropped %s jobs, marked %s jobs with a deadline" % (dcount, mcount))
+            logger.info("watchdog: dropped %s jobs, marked %s jobs with a deadline" % (dcount, mcount))
 
     def getstats(self):
         def count_not_done(lst):
@@ -199,22 +200,22 @@ class workq(object):
         return stats
 
     def report(self):
-        print("=== report %s ===" % (time.ctime(),))
-        print("have %s jobs" % len(self.id2job))
-        print("count:", self.count)
+        logger.info("=== report %s ===" % (time.ctime(),))
+        logger.info("have %s jobs" % len(self.id2job))
+        logger.info(f"count: {self.count}")
 
         stats = self.getstats()
         busy = list(stats["busy"].items())
         busy.sort()
 
         if busy:
-            print("busy channels:")
+            logger.info("busy channels:")
             for c, todo in busy:
-                print(c, todo)
+                logger.info(f"{c}: {todo}")
         else:
-            print("all channels idle")
+            logger.info("all channels idle")
 
-        print()
+        logger.info("=== end report ===")
 
     def waitjobs(self, jobids):
         "Wait for jobs to finish. Drop jobs marked by dropjobs()."
@@ -236,7 +237,7 @@ class workq(object):
         self._mark_finished(j, result=result, error=error, ttl=ttl)
 
     def updatejob(self, jobid, info):
-        print("updatejob", jobid, info)
+        logger.info(f"updatejob {jobid} {info}")
         j = self.id2job[jobid]
         j.info.update(info)
 
@@ -275,7 +276,7 @@ class workq(object):
         if jobid is not None:
             if jobid in self.id2job and self.id2job[jobid].error != "killed":
                 return jobid
-        print("Job", jobid, "not found, pushing new job")
+        logger.info(f"Job {jobid} not found, pushing new job")
         return self.pushjob(
             job(
                 payload=payload,

@@ -69,11 +69,11 @@ def test_job_repr_unicode():
 
 
 def test_job_repr_none():
-    repr(jobs.job("render"))
+    assert "<job None at" in repr(jobs.job("render"))
 
 
 def test_job_repr_int():
-    repr(jobs.job("render", jobid=41))
+    assert repr(jobs.job("render", jobid=41))[6].isdigit()
 
 
 def test_job_pickle():
@@ -166,28 +166,15 @@ def test_stats(wq):
     print(wq.waitjobs(joblst[1:]))
 
 
-def test_report(wq, monkeypatch):
-    def get_report():
-        if int(sys.version[0]) < 3:
-            stdout = io.BytesIO()
-        else:
-            stdout = io.StringIO()
-        monkeypatch.setattr(sys, "stdout", stdout)
-        wq.report()
-        monkeypatch.undo()
-        return stdout.getvalue()
-
-    out = get_report()
-    assert "all channels idle" in out
+def test_report(wq, caplog):
+    wq.report()
+    assert "all channels idle" in caplog.text
 
     joblst = [wq.push("render", payload=i) for i in range(10)]
     wq.killjobs(joblst[2:])
-
-    out = get_report()
-    print("--- OUTPUT ---\n", out, "\n------------")
-
-    assert "render 10" not in out
-    assert "render 2\n" in out
+    wq.report()
+    assert "render: 10" not in caplog.text
+    assert "render: 2" in caplog.text
 
 
 def test_killjobs_unknown_jobid(wq):
